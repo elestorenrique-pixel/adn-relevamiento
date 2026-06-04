@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
   // ═══════════════════════════════════════════════════════════
   // OPTIMIZACIONES
   // ═══════════════════════════════════════════════════════════
-  swcMinify: true,
+  
   compress: true,
 
   // ═══════════════════════════════════════════════════════════
@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
   logging: {
     fetches: {
       fullUrl: process.env.NODE_ENV === 'development',
-      unmatchedRoutes: true,
+    
     },
   },
 };
