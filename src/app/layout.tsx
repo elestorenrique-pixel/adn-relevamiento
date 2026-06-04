@@ -1,0 +1,38 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "ADL Técnico - Simulación Eléctrica Industrial",
+  description: "Plataforma educativa de simulación y evaluación eléctrica industrial. Taller y Laboratorio de 3° año - Instalaciones Eléctricas. Prof. Héctor Cruz",
+  keywords: ["ADL Técnico", "eléctrica", "industrial", "simulación", "educación", "normativa", "AEA", "IRAM", "EDESA"],
+  authors: [{ name: "Prof. Héctor Cruz - ADL Técnico" }],
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="es" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+      >
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
+}

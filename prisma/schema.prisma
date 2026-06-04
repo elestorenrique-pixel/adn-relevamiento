@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("tecnico") // tecnico | auditor
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessionsAsTecnico Session[] @relation("TecnicoSessions")
+  sessionsAsAuditor Session[] @relation("AuditorSessions")
+  chatMessages      ChatMessage[]
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  code          String   @unique // 6-digit code for joining
+  status        String   @default("lobby") // lobby | safety | panel | motor | analysis | completed
+  currentStage  String   @default("safety") // safety | panel | motor | analysis
+  tecnicoId     String
+  auditorId     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
+
+  tecnico       User     @relation("TecnicoSessions", fields: [tecnicoId], references: [id])
+  auditor       User?    @relation("AuditorSessions", fields: [auditorId], references: [id])
+
+  safetyChecks     SafetyCheck[]
+  panelChecks      PanelCheck[]
+  motorChecks      MotorCheck[]
+  analysisData     AnalysisData[]
+  chatMessages     ChatMessage[]
+  auditRecords     AuditRecord[]
+  documents        GeneratedDocument[]
+}
+
+model SafetyCheck {
+  id                      String   @id @default(cuid())
+  sessionId               String
+  step                    String   // identify | verify_zero | grounding | block | signal
+  tecnicoCompleted        Boolean  @default(false)
+  auditorValidated        Boolean  @default(false)
+  tecnicoNotes            String?
+  auditorNotes            String?
+  order                   Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  session                 Session  @relation(fields: [sessionId], references: [id])
+}
+
+model PanelCheck {
+  id                      String   @id @default(cuid())
+  sessionId               String
+  step                    String   // voltage | current | conductors | distribution | grounding | terminals | torque
+  tecnicoValue            String?  // Measured value
+  tecnicoCompleted        Boolean  @default(false)
+  auditorValidated        Boolean  @default(false)
+  tecnicoNotes            String?
+  auditorNotes            String?
+  auditorErrors           String?  // JSON array of errors detected
+  normativeStatus         String   @default("pending") // pending | passed | failed
+  order                   Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  session                 Session  @relation(fields: [sessionId], references: [id])
+}
+
+model MotorCheck {
+  id                      String   @id @default(cuid())
+  sessionId               String
+  step                    String   // voltage | current | coil_resistance | insulation | nameplate | power_cosfi
+  tecnicoValue            String?  // Measured value
+  tecnicoCompleted        Boolean  @default(false)
+  auditorValidated        Boolean  @default(false)
+  tecnicoNotes            String?
+  auditorNotes            String?
+  auditorErrors           String?
+  normativeStatus         String   @default("pending")
+  order                   Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  session                 Session  @relation(fields: [sessionId], references: [id])
+}
+
+model AnalysisData {
+  id                      String   @id @default(cuid())
+  sessionId               String
+  parameter               String   // active_power | reactive_power | apparent_power | comparison
+  measuredValue           String?
+  plateValue              String?
+  calculatedValue         String?
+  deviation               String?
+  status                  String   @default("pending")
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  session                 Session  @relation(fields: [sessionId], references: [id])
+}
+
+model AuditRecord {
+  id                      String   @id @default(cuid())
+  sessionId               String
+  category                String   // safety | panel | motor | analysis
+  action                  String
+  correct                 Boolean
+  errors                  String?  // JSON
+  omissions               String?  // JSON
+  normativeReference      String?
+  auditorNotes            String?
+  autoDetected            Boolean  @default(false)
+  createdAt               DateTime @default(now())
+
+  session                 Session  @relation(fields: [sessionId], references: [id])
+}
+
+model ChatMessage {
+  id                      String   @id @default(cuid())
+  sessionId               String
+  userId                  String
+  role                    String   // tecnico | auditor | system
+  content                 String
+  timestamp               DateTime @default(now())
+
+  session                 Session  @relation(fields: [sessionId], references: [id])
+  user                    User     @relation(fields: [userId], references: [id])
+}
+
+model GeneratedDocument {
+  id                      String   @id @default(cuid())
+  sessionId               String
+  type                    String   // relevamiento | auditoria | presupuesto
+  filePath                String?
+  content                 String   // JSON with document data
+  createdAt               DateTime @default(now())
+
+  session                 Session  @relation(fields: [sessionId], references: [id])
+}
+
+model CostItem {
+  id                      String   @id @default(cuid())
+  category                String   // mano_obra | material | correccion
+  description             String
+  unit                    String
+  unitPrice               Float
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model NormativeRule {
+  id                      String   @id @default(cuid())
+  source                  String   // edesa | aea
+  code                    String
+  description             String
+  category                String   // safety | panel | motor | general
+  validationType          String   // range | required | comparison
+  minValue                String?
+  maxValue                String?
+  requiredValue           String?
+  severity                String   @default("error") // error | warning | info
+  createdAt               DateTime @default(now())
+}
