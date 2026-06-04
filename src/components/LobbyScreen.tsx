@@ -5,9 +5,11 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import {
   Plus, LogIn, Clock, Copy, Check,
-  Users, ArrowRight, Shield, LogOut, RotateCcw
+  Users, ArrowRight, Shield, LogOut, RotateCcw,
+  Zap, CircuitBoard
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
+import type { SystemType } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,15 +17,17 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
 export default function LobbyScreen() {
-  const { user, sessions, createSession, joinSession, logout, isLoading, addNotification } = useStore()
+  const { user, sessions, createSession, joinSession, logout, isLoading, addNotification, systemType, setSystemType } = useStore()
   const [joinCode, setJoinCode] = useState('')
   const [showJoinInput, setShowJoinInput] = useState(false)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [selectedSystemType, setSelectedSystemType] = useState<SystemType>('monofasico')
 
   const handleCreate = async () => {
-    const code = await createSession()
+    setSystemType(selectedSystemType)
+    const code = await createSession(selectedSystemType)
     if (code) {
-      addNotification(`Sesión creada. Código: ${code}`, 'success')
+      addNotification(`Sesión ${selectedSystemType === 'trifasico' ? 'trifásica' : 'monofásica'} creada. Código: ${code}`, 'success')
     }
   }
 
@@ -59,15 +63,15 @@ export default function LobbyScreen() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-slate-800 border border-amber-500/30 flex items-center justify-center p-1.5">
               <Image
-                src="/adl-logo.png"
-                alt="ADL Técnico"
+                src="/adn-logo.png"
+                alt="ADN Técnico"
                 width={24}
                 height={24}
                 className="object-contain"
               />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-100">ADL <span className="text-amber-500">Técnico</span></h1>
+              <h1 className="text-lg font-bold text-slate-100">ADN <span className="text-amber-500">Técnico</span></h1>
               <p className="text-xs text-slate-500">Lobby de Sesiones</p>
             </div>
           </div>
@@ -115,6 +119,51 @@ export default function LobbyScreen() {
                 </p>
               </CardHeader>
               <CardContent>
+                {/* System type selector */}
+                <div className="space-y-3 mb-4">
+                  <label className="text-xs text-slate-400 font-medium">Tipo de Sistema</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setSelectedSystemType('monofasico')}
+                      className={`relative p-3 rounded-lg border-2 text-left transition-all ${
+                        selectedSystemType === 'monofasico'
+                          ? 'border-amber-500 bg-amber-500/10'
+                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className={`w-4 h-4 ${selectedSystemType === 'monofasico' ? 'text-amber-500' : 'text-slate-500'}`} />
+                        <span className={`text-sm font-semibold ${selectedSystemType === 'monofasico' ? 'text-amber-400' : 'text-slate-300'}`}>
+                          Monofásico
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500">220V · 1 fase + neutro</span>
+                      {selectedSystemType === 'monofasico' && (
+                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setSelectedSystemType('trifasico')}
+                      className={`relative p-3 rounded-lg border-2 text-left transition-all ${
+                        selectedSystemType === 'trifasico'
+                          ? 'border-amber-500 bg-amber-500/10'
+                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <CircuitBoard className={`w-4 h-4 ${selectedSystemType === 'trifasico' ? 'text-amber-500' : 'text-slate-500'}`} />
+                        <span className={`text-sm font-semibold ${selectedSystemType === 'trifasico' ? 'text-amber-400' : 'text-slate-300'}`}>
+                          Trifásico
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500">380V · 3 fases (R S T)</span>
+                      {selectedSystemType === 'trifasico' && (
+                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 <Button
                   onClick={handleCreate}
                   disabled={isLoading}
@@ -243,6 +292,13 @@ export default function LobbyScreen() {
                                  session.status === 'panel' ? 'Tablero' :
                                  session.status === 'motor' ? 'Motor' : 'Análisis'}
                               </Badge>
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                                session.systemType === 'trifasico'
+                                  ? 'border-sky-500/50 text-sky-400'
+                                  : 'border-amber-500/50 text-amber-400'
+                              }`}>
+                                {session.systemType === 'trifasico' ? '380V Tri' : '220V Mono'}
+                              </Badge>
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-xs text-slate-500">{formatDate(session.createdAt)}</span>
@@ -292,7 +348,7 @@ export default function LobbyScreen() {
       <footer className="border-t border-slate-800 bg-slate-900/30 py-4 mt-auto">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <p className="text-xs text-slate-600">
-            ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz · Normativas AEA 90364 / IRAM / EDESA
+            ADN Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz · Normativas AEA 90364 / IRAM / EDESA
           </p>
         </div>
       </footer>

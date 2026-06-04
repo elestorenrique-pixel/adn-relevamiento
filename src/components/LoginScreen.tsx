@@ -95,8 +95,8 @@ export default function LoginScreen() {
             className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-900/80 border border-amber-500/30 mb-4 shadow-lg shadow-amber-500/5 p-2"
           >
             <Image
-              src="/adl-logo.png"
-              alt="ADL Técnico Logo"
+              src="/adn-logo.png"
+              alt="ADN Técnico Logo"
               width={56}
               height={56}
               className="object-contain"
@@ -104,7 +104,7 @@ export default function LoginScreen() {
             />
           </motion.div>
           <h1 className="text-3xl font-bold text-slate-100 tracking-tight">
-            ADL <span className="text-amber-500">Técnico</span>
+            ADN <span className="text-amber-500">Técnico</span>
           </h1>
           <p className="text-slate-400 mt-2 text-sm">
             Simulación de Relevamiento y Auditoría Eléctrica
@@ -309,7 +309,7 @@ export default function LoginScreen() {
         </Card>
 
         <p className="text-center text-xs text-slate-600 mt-6">
-          ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz · Normativas AEA 90364 / IRAM / EDESA
+          ADN Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz · Normativas AEA 90364 / IRAM / EDESA
         </p>
       </motion.div>
     </div>

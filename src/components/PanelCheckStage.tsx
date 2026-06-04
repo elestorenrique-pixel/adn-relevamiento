@@ -7,7 +7,7 @@ import {
   Ruler, FileCheck, FastForward
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { PANEL_STEPS } from '@/lib/types'
+import { PANEL_STEPS_MONOFASICO, PANEL_STEPS_TRIFASICO } from '@/lib/types'
 import type { NormativeStatus } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,7 +25,7 @@ import {
 
 export default function PanelCheckStage() {
   const {
-    user, panelSteps, isSafetyComplete, demoMode,
+    user, panelSteps, isSafetyComplete, demoMode, systemType,
     panelRegisterMeasurement, panelValidateStep, panelGetProgress, panelAutoValidateAll,
     setStage, addNotification,
   } = useStore()
@@ -38,6 +38,9 @@ export default function PanelCheckStage() {
 
   const isTecnico = user?.role === 'tecnico'
   const isAuditor = user?.role === 'auditor'
+  const isTrifasico = systemType === 'trifasico'
+  const stepsDef = isTrifasico ? PANEL_STEPS_TRIFASICO : PANEL_STEPS_MONOFASICO
+
   const { completed, total } = panelGetProgress()
   const progressPct = total > 0 ? (completed / total) * 100 : 0
 
@@ -55,6 +58,11 @@ export default function PanelCheckStage() {
     )
   }
 
+  const getStepLabel = (stepId: string) => {
+    const step = stepsDef.find(s => s.id === stepId)
+    return step?.label || stepId
+  }
+
   const handleRegister = (stepId: string) => {
     const value = values[stepId] || ''
     const notes = notesMap[stepId] || ''
@@ -63,13 +71,13 @@ export default function PanelCheckStage() {
       return
     }
     panelRegisterMeasurement(stepId, value, notes)
-    addNotification(`Medición registrada: ${PANEL_STEPS.find(s => s.id === stepId)?.label}`, 'success')
+    addNotification(`Medición registrada: ${getStepLabel(stepId)}`, 'success')
   }
 
   const handleValidate = (stepId: string) => {
     const notes = auditorNotesMap[stepId] || ''
     panelValidateStep(stepId, true, notes)
-    addNotification(`Paso validado: ${PANEL_STEPS.find(s => s.id === stepId)?.label}`, 'success')
+    addNotification(`Paso validado: ${getStepLabel(stepId)}`, 'success')
   }
 
   const handleReject = (stepId: string) => {
@@ -79,7 +87,7 @@ export default function PanelCheckStage() {
       return
     }
     panelValidateStep(stepId, false, reason, reason)
-    addNotification(`Paso rechazado: ${PANEL_STEPS.find(s => s.id === stepId)?.label}`, 'error')
+    addNotification(`Paso rechazado: ${getStepLabel(stepId)}`, 'error')
   }
 
   const getStatusBadge = (status: NormativeStatus) => {
@@ -99,11 +107,21 @@ export default function PanelCheckStage() {
     if (isNaN(num)) return null
 
     switch (stepId) {
-      case 'voltage':
+      case 'voltage_ln':
         if (num >= 198 && num <= 242) {
-          return { ok: true, msg: `IRAM 2071: Tensión dentro de rango (198-242V)` }
+          return { ok: true, msg: `IRAM 2071: Tensión L-N dentro de rango (198-242V)` }
         }
-        return { ok: false, msg: `IRAM 2071: Tensión FUERA de rango (198-242V)` }
+        return { ok: false, msg: `IRAM 2071: Tensión L-N FUERA de rango (198-242V)` }
+      case 'voltage_ll':
+        if (num >= 342 && num <= 418) {
+          return { ok: true, msg: `IRAM 2071: Tensión L-L dentro de rango (342-418V)` }
+        }
+        return { ok: false, msg: `IRAM 2071: Tensión L-L FUERA de rango (342-418V)` }
+      case 'voltage_imbalance':
+        if (num <= 2) {
+          return { ok: true, msg: `EDESA NT: Desbalance de tensión OK (≤2%)` }
+        }
+        return { ok: false, msg: `EDESA NT: Desbalance de tensión EXCEDIDO (>2%)` }
       case 'grounding':
         if (num <= 10) {
           return { ok: true, msg: `IRAM 2281-3: Resistencia de tierra OK (≤10Ω)` }
@@ -131,7 +149,14 @@ export default function PanelCheckStage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-100">Chequeo de Tablero</h2>
-            <p className="text-sm text-slate-400">7 pasos de inspección y medición</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-slate-400">{total} pasos de inspección y medición</p>
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                isTrifasico ? 'border-sky-500/50 text-sky-400' : 'border-amber-500/50 text-amber-400'
+              }`}>
+                {isTrifasico ? '380V Trifásico' : '220V Monofásico'}
+              </Badge>
+            </div>
           </div>
         </div>
         <div className="text-right">
@@ -149,9 +174,23 @@ export default function PanelCheckStage() {
         </div>
       </div>
 
+      {/* Trifásico voltage imbalance info */}
+      {isTrifasico && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="bg-sky-500/5 border-sky-500/30">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 text-xs text-sky-400">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>Sistema trifásico: medir tensiones L-N, L-L y verificar desbalance entre fases (≤2% EDESA).</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Accordion Steps */}
       <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="space-y-2">
-        {PANEL_STEPS.map((stepDef, idx) => {
+        {stepsDef.map((stepDef, idx) => {
           const step = panelSteps.find(s => s.step === stepDef.id)
           if (!step) return null
 

@@ -80,8 +80,8 @@ export default function SafetyStage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center p-1.5">
                 <Image
-                  src="/adl-logo.png"
-                  alt="ADL Técnico"
+                  src="/adn-logo.png"
+                  alt="ADN Técnico"
                   width={24}
                   height={24}
                   className="object-contain"

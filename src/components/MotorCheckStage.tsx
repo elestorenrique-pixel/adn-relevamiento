@@ -7,7 +7,7 @@ import {
   Ruler, FileCheck, Info, FastForward
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { MOTOR_STEPS } from '@/lib/types'
+import { MOTOR_STEPS_MONOFASICO, MOTOR_STEPS_TRIFASICO } from '@/lib/types'
 import type { NormativeStatus } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,7 +26,7 @@ import {
 
 export default function MotorCheckStage() {
   const {
-    user, motorSteps, nameplateData, isSafetyComplete, demoMode,
+    user, motorSteps, nameplateData, isSafetyComplete, demoMode, systemType,
     motorRegisterMeasurement, motorValidateStep, motorSetNameplateData, motorGetProgress, motorAutoValidateAll,
     setStage, addNotification,
   } = useStore()
@@ -41,6 +41,9 @@ export default function MotorCheckStage() {
 
   const isTecnico = user?.role === 'tecnico'
   const isAuditor = user?.role === 'auditor'
+  const isTrifasico = systemType === 'trifasico'
+  const stepsDef = isTrifasico ? MOTOR_STEPS_TRIFASICO : MOTOR_STEPS_MONOFASICO
+
   const { completed, total } = motorGetProgress()
   const progressPct = total > 0 ? (completed / total) * 100 : 0
 
@@ -58,6 +61,11 @@ export default function MotorCheckStage() {
     )
   }
 
+  const getStepLabel = (stepId: string) => {
+    const step = stepsDef.find(s => s.id === stepId)
+    return step?.label || stepId
+  }
+
   const handleRegister = (stepId: string) => {
     const value = values[stepId] || ''
     const notes = notesMap[stepId] || ''
@@ -66,13 +74,13 @@ export default function MotorCheckStage() {
       return
     }
     motorRegisterMeasurement(stepId, value, notes)
-    addNotification(`Medición registrada: ${MOTOR_STEPS.find(s => s.id === stepId)?.label}`, 'success')
+    addNotification(`Medición registrada: ${getStepLabel(stepId)}`, 'success')
   }
 
   const handleValidate = (stepId: string) => {
     const notes = auditorNotesMap[stepId] || ''
     motorValidateStep(stepId, true, notes)
-    addNotification(`Paso validado: ${MOTOR_STEPS.find(s => s.id === stepId)?.label}`, 'success')
+    addNotification(`Paso validado: ${getStepLabel(stepId)}`, 'success')
   }
 
   const handleReject = (stepId: string) => {
@@ -82,7 +90,7 @@ export default function MotorCheckStage() {
       return
     }
     motorValidateStep(stepId, false, reason, reason)
-    addNotification(`Paso rechazado: ${MOTOR_STEPS.find(s => s.id === stepId)?.label}`, 'error')
+    addNotification(`Paso rechazado: ${getStepLabel(stepId)}`, 'error')
   }
 
   const getStatusBadge = (status: NormativeStatus) => {
@@ -100,11 +108,18 @@ export default function MotorCheckStage() {
 
     switch (stepId) {
       case 'voltage':
-        if (num >= 198 && num <= 242) return { ok: true, msg: 'IRAM 2071: Tensión dentro de rango (198-242V)' }
-        return { ok: false, msg: 'IRAM 2071: Tensión FUERA de rango (198-242V)' }
+      case 'voltage_ln':
+        if (num >= 198 && num <= 242) return { ok: true, msg: 'IRAM 2071: Tensión L-N dentro de rango (198-242V)' }
+        return { ok: false, msg: 'IRAM 2071: Tensión L-N FUERA de rango (198-242V)' }
+      case 'voltage_ll':
+        if (num >= 342 && num <= 418) return { ok: true, msg: 'IRAM 2071: Tensión L-L dentro de rango (342-418V)' }
+        return { ok: false, msg: 'IRAM 2071: Tensión L-L FUERA de rango (342-418V)' }
       case 'insulation':
         if (num >= 1) return { ok: true, msg: 'IRAM 2413: Aislamiento OK (≥1MΩ)' }
         return { ok: false, msg: 'IRAM 2413: Aislamiento INSUFICIENTE (<1MΩ). ¡NO poner en servicio!' }
+      case 'power_cosfi':
+        if (num >= 0.85) return { ok: true, msg: 'EDESA NT: Factor de potencia OK (≥0.85)' }
+        return { ok: false, msg: 'EDESA NT: Factor de potencia BAJO (<0.85)' }
       default:
         return null
     }
@@ -126,20 +141,45 @@ export default function MotorCheckStage() {
 
   const allCompleted = motorSteps.every(s => s.tecnicoCompleted && (s.auditorValidated || demoMode))
 
-  const nameplateFields = [
+  // Nameplate fields vary by system type
+  const baseNameplateFields = [
     { key: 'brand', label: 'Marca' },
     { key: 'model', label: 'Modelo' },
     { key: 'powerHp', label: 'Potencia (HP)' },
     { key: 'powerKw', label: 'Potencia (kW)' },
-    { key: 'voltage', label: 'Tensión (V)' },
-    { key: 'current', label: 'Corriente (A)' },
+    { key: 'voltage', label: isTrifasico ? 'Tensión L-N (V)' : 'Tensión (V)' },
+  ]
+
+  const trifasicoExtraFields = [
+    { key: 'voltage_ll', label: 'Tensión L-L (V)' },
+  ]
+
+  const commonFields = [
+    { key: 'current', label: isTrifasico ? 'Corriente/Fase (A)' : 'Corriente (A)' },
     { key: 'frequency', label: 'Frecuencia (Hz)' },
     { key: 'rpm', label: 'RPM' },
     { key: 'cosFi', label: 'cos φ' },
     { key: 'serviceFactor', label: 'Factor de servicio' },
     { key: 'insulation', label: 'Clase aislamiento' },
-    { key: 'connection', label: 'Conexión' },
   ]
+
+  // Connection type depends on system type
+  const connectionFields = isTrifasico
+    ? [
+        { key: 'connection', label: 'Conexión', placeholder: 'estrella (Y) / triángulo (Δ)' },
+      ]
+    : [
+        { key: 'connection', label: 'Conexión', placeholder: 'directo / capacitor' },
+      ]
+
+  const nameplateFields = isTrifasico
+    ? [...baseNameplateFields, ...trifasicoExtraFields, ...commonFields, ...connectionFields]
+    : [...baseNameplateFields, ...commonFields, ...connectionFields]
+
+  // Coil labels depend on system type
+  const coilLabels = isTrifasico
+    ? ['R1', 'R2', 'R3']
+    : ['Principal', 'Auxiliar', 'R3']
 
   return (
     <div className="space-y-6">
@@ -151,7 +191,14 @@ export default function MotorCheckStage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-100">Chequeo de Motor</h2>
-            <p className="text-sm text-slate-400">6 pasos de inspección y medición</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-slate-400">{total} pasos de inspección y medición</p>
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                isTrifasico ? 'border-sky-500/50 text-sky-400' : 'border-amber-500/50 text-amber-400'
+              }`}>
+                {isTrifasico ? '380V Trifásico' : '220V Monofásico'}
+              </Badge>
+            </div>
           </div>
         </div>
         <div className="text-right">
@@ -162,6 +209,20 @@ export default function MotorCheckStage() {
 
       {/* Progress bar */}
       <Progress value={progressPct} className="h-2 bg-slate-800 [&>div]:bg-amber-500" />
+
+      {/* System type info card */}
+      {isTrifasico && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="bg-sky-500/5 border-sky-500/30">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 text-xs text-sky-400">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>Motor trifásico: medir tensión L-N y L-L, corrientes por fase (R, S, T), resistencia de bobinas R1/R2/R3.</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Nameplate Section */}
       <Card className="bg-slate-900 border-slate-700/50">
@@ -176,7 +237,9 @@ export default function MotorCheckStage() {
               </div>
               <div>
                 <CardTitle className="text-sm text-slate-200">Datos de Placa del Motor</CardTitle>
-                <p className="text-xs text-slate-400">Lectura de la placa de características</p>
+                <p className="text-xs text-slate-400">
+                  {isTrifasico ? 'Lectura de placa del motor trifásico' : 'Lectura de la placa de características'}
+                </p>
               </div>
             </div>
             {showNameplate
@@ -201,7 +264,7 @@ export default function MotorCheckStage() {
                         value={nameplateData[field.key] || ''}
                         onChange={(e) => motorSetNameplateData(field.key, e.target.value)}
                         disabled={!isTecnico}
-                        placeholder={field.label}
+                        placeholder={(field as any).placeholder || field.label}
                         className="bg-slate-800 border-slate-700 text-slate-100 text-sm placeholder:text-slate-600 h-8 focus:border-amber-500"
                       />
                     </div>
@@ -215,7 +278,7 @@ export default function MotorCheckStage() {
 
       {/* Measurement Steps */}
       <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="space-y-2">
-        {MOTOR_STEPS.map((stepDef, idx) => {
+        {stepsDef.map((stepDef, idx) => {
           const step = motorSteps.find(s => s.step === stepDef.id)
           if (!step) return null
           const feedback = getNormativeFeedback(stepDef.id, step.tecnicoValue)
@@ -263,24 +326,55 @@ export default function MotorCheckStage() {
                   <div className="space-y-3 pt-2">
                     <Separator className="bg-slate-800" />
 
-                    {/* Special: Coil resistance with R1, R2, R3 */}
+                    {/* Special: Coil resistance with multiple inputs */}
                     {stepDef.id === 'coil_resistance' && isTecnico && !step.tecnicoCompleted && (
                       <div className="space-y-2">
-                        <label className="text-xs text-slate-400 block">Resistencia de bobinas (Ω)</label>
-                        {['R1', 'R2', 'R3'].map((r) => (
-                          <div key={r} className="flex items-center gap-2">
-                            <Label className="text-xs text-slate-300 w-8">{r}</Label>
-                            <Input
-                              type="number"
-                              step="any"
-                              value={coilValues[r.toLowerCase() as keyof typeof coilValues] || ''}
-                              onChange={(e) => setCoilValues(prev => ({ ...prev, [r.toLowerCase()]: e.target.value }))}
-                              placeholder={`${r} (Ω)`}
-                              className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-600 focus:border-amber-500"
-                            />
-                          </div>
-                        ))}
-                        {calculateCoilBalance() && (
+                        <label className="text-xs text-slate-400 block">
+                          Resistencia de bobinas (Ω) — {isTrifasico ? 'R1, R2, R3' : 'Principal, Auxiliar'}
+                        </label>
+                        {isTrifasico ? (
+                          // Trifásico: R1, R2, R3
+                          ['R1', 'R2', 'R3'].map((r) => (
+                            <div key={r} className="flex items-center gap-2">
+                              <Label className="text-xs text-slate-300 w-8">{r}</Label>
+                              <Input
+                                type="number"
+                                step="any"
+                                value={coilValues[r.toLowerCase() as keyof typeof coilValues] || ''}
+                                onChange={(e) => setCoilValues(prev => ({ ...prev, [r.toLowerCase()]: e.target.value }))}
+                                placeholder={`${r} (Ω)`}
+                                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-600 focus:border-amber-500"
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          // Monofásico: Principal, Auxiliar
+                          <>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-slate-300 w-20">Principal</Label>
+                              <Input
+                                type="number"
+                                step="any"
+                                value={coilValues.r1 || ''}
+                                onChange={(e) => setCoilValues(prev => ({ ...prev, r1: e.target.value }))}
+                                placeholder="Principal (Ω)"
+                                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-600 focus:border-amber-500"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-slate-300 w-20">Auxiliar</Label>
+                              <Input
+                                type="number"
+                                step="any"
+                                value={coilValues.r2 || ''}
+                                onChange={(e) => setCoilValues(prev => ({ ...prev, r2: e.target.value }))}
+                                placeholder="Auxiliar (Ω)"
+                                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-600 focus:border-amber-500"
+                              />
+                            </div>
+                          </>
+                        )}
+                        {calculateCoilBalance() && isTrifasico && (
                           <div className={`p-2 rounded-lg flex items-center gap-2 ${
                             calculateCoilBalance()!.ok
                               ? 'bg-emerald-500/10 border border-emerald-500/30'
@@ -300,7 +394,11 @@ export default function MotorCheckStage() {
                             const r1 = coilValues.r1 || '0'
                             const r2 = coilValues.r2 || '0'
                             const r3 = coilValues.r3 || '0'
-                            motorRegisterMeasurement('coil_resistance', `R1=${r1} R2=${r2} R3=${r3}`, notesMap[stepDef.id] || '')
+                            if (isTrifasico) {
+                              motorRegisterMeasurement('coil_resistance', `R1=${r1} R2=${r2} R3=${r3}`, notesMap[stepDef.id] || '')
+                            } else {
+                              motorRegisterMeasurement('coil_resistance', `Principal=${r1} Auxiliar=${r2}`, notesMap[stepDef.id] || '')
+                            }
                             addNotification('Resistencia de bobinas registrada', 'success')
                           }}
                           size="sm"

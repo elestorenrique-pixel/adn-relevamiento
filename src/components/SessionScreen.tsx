@@ -29,9 +29,11 @@ const STAGE_LABELS: Record<SessionStage, string> = {
 
 export default function SessionScreen() {
   const {
-    user, currentSession, currentStage, isSafetyComplete, demoMode,
+    user, currentSession, currentStage, isSafetyComplete, demoMode, systemType,
     leaveSession, addNotification,
   } = useStore()
+
+  const isTrifasico = systemType === 'trifasico'
 
   const [chatCollapsed, setChatCollapsed] = useState(false)
   const [completedStages, setCompletedStages] = useState<SessionStage[]>([])
@@ -91,15 +93,15 @@ export default function SessionScreen() {
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-slate-800 border border-amber-500/30 flex items-center justify-center p-1">
                 <Image
-                  src="/adl-logo.png"
-                  alt="ADL Técnico"
+                  src="/adn-logo.png"
+                  alt="ADN Técnico"
                   width={20}
                   height={20}
                   className="object-contain"
                 />
               </div>
               <span className="text-sm font-bold text-slate-100 hidden sm:inline">
-                ADL <span className="text-amber-500">Técnico</span>
+                ADN <span className="text-amber-500">Técnico</span>
               </span>
             </div>
 
@@ -109,13 +111,23 @@ export default function SessionScreen() {
               <Badge variant="outline" className="font-mono text-amber-400 border-amber-500/50">
                 {currentSession?.code || '------'}
               </Badge>
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 md:hidden ${
+                isTrifasico ? 'border-sky-500/50 text-sky-400' : 'border-amber-500/50 text-amber-400'
+              }`}>
+                {isTrifasico ? '380V Tri' : '220V Mono'}
+              </Badge>
             </div>
           </div>
 
-          {/* Center: Stage indicator + Demo Mode */}
+          {/* Center: Stage indicator + System Type + Demo Mode */}
           <div className="hidden md:flex items-center gap-2">
             <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
               {STAGE_LABELS[currentStage]}
+            </Badge>
+            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+              isTrifasico ? 'border-sky-500/50 text-sky-400' : 'border-amber-500/50 text-amber-400'
+            }`}>
+              {isTrifasico ? '380V Tri' : '220V Mono'}
             </Badge>
             {demoMode && (
               <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
@@ -213,7 +225,7 @@ export default function SessionScreen() {
       {/* Sticky Footer */}
       <footer className="border-t border-slate-800 bg-slate-900/80 backdrop-blur-sm py-2 px-4 shrink-0 mt-auto">
         <div className="flex items-center justify-between text-xs text-slate-600">
-          <span>ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz</span>
+          <span>ADN Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz</span>
           <span>AEA 90364 / IRAM / EDESA</span>
         </div>
       </footer>

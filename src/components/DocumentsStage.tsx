@@ -86,7 +86,9 @@ function DocumentCard({ icon, title, description, status, onGenerate, onPreview,
 }
 
 export default function DocumentsStage() {
-  const { user, addNotification, currentSession, analysisData, safetySteps, panelSteps, motorSteps } = useStore()
+  const { user, addNotification, currentSession, analysisData, safetySteps, panelSteps, motorSteps, systemType } = useStore()
+
+  const isTrifasico = systemType === 'trifasico'
 
   const [docStatuses, setDocStatuses] = useState<Record<string, 'pending' | 'generating' | 'ready'>>({
     relevamiento: 'pending',
@@ -135,7 +137,7 @@ export default function DocumentsStage() {
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(16)
       doc.setFont('helvetica', 'bold')
-      doc.text('ADL Técnico', 14, 12)
+      doc.text('ADN Técnico', 14, 12)
       doc.setFontSize(8)
       doc.setFont('helvetica', 'italic')
       doc.text('Taller y Laboratorio de 3° año - Instalaciones Eléctricas', 14, 18)
@@ -156,9 +158,10 @@ export default function DocumentsStage() {
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
       doc.text(`Código: ${currentSession?.code || 'N/A'}`, 196, 12, { align: 'right' })
-      doc.text(`Técnico: ${currentSession?.tecnicoName || user?.name || 'N/A'}`, 196, 18, { align: 'right' })
-      doc.text(`Auditor: ${currentSession?.auditorName || 'N/A'}`, 196, 24, { align: 'right' })
-      doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 196, 30, { align: 'right' })
+      doc.text(`Sistema: ${isTrifasico ? 'Trifásico 380V' : 'Monofásico 220V'}`, 196, 17, { align: 'right' })
+      doc.text(`Técnico: ${currentSession?.tecnicoName || user?.name || 'N/A'}`, 196, 22, { align: 'right' })
+      doc.text(`Auditor: ${currentSession?.auditorName || 'N/A'}`, 196, 27, { align: 'right' })
+      doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 196, 32, { align: 'right' })
 
       // Instructor/Course info box
       let y = 46
@@ -201,17 +204,32 @@ export default function DocumentsStage() {
         signal: 'Delimitar Zona de Trabajo',
       }
       const panelLabels: Record<string, string> = {
-        voltage: 'Medir Tensión',
-        current: 'Medir Corriente',
+        voltage_ln: 'Tensión L-N',
+        voltage_ll: 'Tensión L-L',
+        voltage_imbalance: 'Desbalance de Tensión',
+        current_phase: 'Corriente de Fase',
+        current_r: 'Corriente Fase R',
+        current_s: 'Corriente Fase S',
+        current_t: 'Corriente Fase T',
+        current_neutral: 'Corriente de Neutro',
         conductors: 'Identificar Conductores',
         distribution: 'Verificar Distribución',
+        differential: 'Protección Diferencial',
         grounding: 'Control Puesta a Tierra',
         terminals: 'Verificar Terminales',
         torque: 'Ajustar Torque',
+        voltage: 'Medir Tensión',
+        current: 'Medir Corriente',
       }
       const motorLabels: Record<string, string> = {
         voltage: 'Medir Tensión',
-        current: 'Medir Corriente',
+        voltage_ln: 'Tensión L-N en Bornes',
+        voltage_ll: 'Tensión L-L en Bornes',
+        current: 'Corriente de Trabajo',
+        current_r: 'Corriente Fase R',
+        current_s: 'Corriente Fase S',
+        current_t: 'Corriente Fase T',
+        current_start: 'Corriente de Arranque',
         coil_resistance: 'Resistencia de Bobinas',
         insulation: 'Aislamiento (Bobina-Carcasa)',
         nameplate: 'Lectura de Placa',
@@ -546,7 +564,7 @@ export default function DocumentsStage() {
         doc.rect(0, pageHeight - 12, 210, 12, 'F')
         doc.setTextColor(255, 255, 255)
         doc.setFontSize(7)
-        doc.text('ADL Técnico - Simulación Educativa | Prof. Héctor Cruz | AEA 90364 / IRAM / EDESA', 14, pageHeight - 4)
+        doc.text('ADN Técnico - Simulación Educativa | Prof. Héctor Cruz | AEA 90364 / IRAM / EDESA', 14, pageHeight - 4)
         doc.text(`Página ${i} de ${totalPages}`, 196, pageHeight - 4, { align: 'right' })
       }
 
@@ -589,7 +607,7 @@ export default function DocumentsStage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `ADL_${docType}_${currentSession?.code || 'doc'}.pdf`
+      a.download = `ADN_${docType}_${currentSession?.code || 'doc'}.pdf`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -643,17 +661,25 @@ export default function DocumentsStage() {
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-slate-800 border border-amber-500/30 flex items-center justify-center p-2 shrink-0">
               <Image
-                src="/adl-logo.png"
-                alt="ADL Técnico"
+                src="/adn-logo.png"
+                alt="ADN Técnico"
                 width={32}
                 height={32}
                 className="object-contain"
               />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm flex-1">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-sm flex-1">
               <div>
                 <span className="text-xs text-slate-500">Código</span>
                 <p className="font-mono font-bold text-amber-400">{currentSession?.code}</p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Sistema</span>
+                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                  isTrifasico ? 'border-sky-500/50 text-sky-400' : 'border-amber-500/50 text-amber-400'
+                }`}>
+                  {isTrifasico ? '380V Tri' : '220V Mono'}
+                </Badge>
               </div>
               <div>
                 <span className="text-xs text-slate-500">Técnico</span>

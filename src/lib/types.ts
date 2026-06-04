@@ -1,4 +1,4 @@
-// Core types for ADL Técnico - Industrial Electrical Simulation
+// Core types for ADN Técnico - Industrial Electrical Simulation
 
 export type UserRole = 'tecnico' | 'auditor'
 
@@ -10,6 +10,9 @@ export type NormativeStatus = 'pending' | 'passed' | 'failed'
 
 export type Severity = 'error' | 'warning' | 'info'
 
+// System type: monofásico (220V) or trifásico (380V)
+export type SystemType = 'monofasico' | 'trifasico'
+
 // Safety steps - 5 Golden Rules
 export const SAFETY_STEPS = [
   { id: 'identify', label: 'Identificar', description: 'Identificar la instalación / equipo sobre el que se va a trabajar', order: 1 },
@@ -19,26 +22,65 @@ export const SAFETY_STEPS = [
   { id: 'signal', label: 'Delimitar Zona de Trabajo', description: 'Delimitar la zona de trabajo y colocar carteles de advertencia', order: 5 },
 ] as const
 
-// Panel check steps
-export const PANEL_STEPS = [
-  { id: 'voltage', label: 'Medir Tensión', description: 'Medir tensión en las fases del tablero (V)', unit: 'V', order: 1 },
-  { id: 'current', label: 'Medir Corriente', description: 'Medir corriente en cada circuito (A)', unit: 'A', order: 2 },
-  { id: 'conductors', label: 'Identificar Conductores', description: 'Identificar conductores (fase, neutro, tierra)', unit: '', order: 3 },
-  { id: 'distribution', label: 'Verificar Distribución', description: 'Verificar distribución de circuitos y protecciones', unit: '', order: 4 },
-  { id: 'grounding', label: 'Control Puesta a Tierra', description: 'Medir resistencia de puesta a tierra (Ω)', unit: 'Ω', order: 5 },
-  { id: 'terminals', label: 'Verificar Terminales', description: 'Verificar estado de terminales y conexiones', unit: '', order: 6 },
-  { id: 'torque', label: 'Ajustar Torque', description: 'Verificar y ajustar torque de borneras (Nm)', unit: 'Nm', order: 7 },
+// Panel check steps — supports monofásico and trifásico
+// For monofásico: voltage L-N (220V), single phase current
+// For trifásico: voltages L-L (380V) and L-N (220V), phase currents + neutral
+export const PANEL_STEPS_MONOFASICO = [
+  { id: 'voltage_ln', label: 'Tensión L-N', description: 'Medir tensión fase-neutro (220V nominal)', unit: 'V', order: 1 },
+  { id: 'current_phase', label: 'Corriente de Fase', description: 'Medir corriente en la fase (A)', unit: 'A', order: 2 },
+  { id: 'current_neutral', label: 'Corriente de Neutro', description: 'Medir corriente de neutro (A)', unit: 'A', order: 3 },
+  { id: 'conductors', label: 'Identificar Conductores', description: 'Identificar conductores (fase, neutro, tierra) — colores según AEA 90364', unit: '', order: 4 },
+  { id: 'distribution', label: 'Verificar Distribución', description: 'Verificar distribución de circuitos y protecciones termomagnéticas', unit: '', order: 5 },
+  { id: 'differential', label: 'Protección Diferencial', description: 'Verificar disyuntor diferencial (≤30mA)', unit: '', order: 6 },
+  { id: 'grounding', label: 'Control Puesta a Tierra', description: 'Medir resistencia de puesta a tierra (Ω) — IRAM 2281', unit: 'Ω', order: 7 },
+  { id: 'terminals', label: 'Verificar Terminales', description: 'Verificar estado de terminales y conexiones', unit: '', order: 8 },
+  { id: 'torque', label: 'Ajustar Torque', description: 'Verificar y ajustar torque de borneras (Nm)', unit: 'Nm', order: 9 },
 ] as const
 
-// Motor check steps
-export const MOTOR_STEPS = [
-  { id: 'voltage', label: 'Medir Tensión', description: 'Medir tensión en bornes del motor (V)', unit: 'V', order: 1 },
-  { id: 'current', label: 'Medir Corriente', description: 'Medir corriente de cada fase (A)', unit: 'A', order: 2 },
-  { id: 'coil_resistance', label: 'Resistencia de Bobinas', description: 'Medir resistencia de bobinas (Ω)', unit: 'Ω', order: 3 },
-  { id: 'insulation', label: 'Aislamiento (Bobina-Carcasa)', description: 'Medir resistencia de aislamiento bobina a carcasa (MΩ)', unit: 'MΩ', order: 4 },
-  { id: 'nameplate', label: 'Lectura de Placa', description: 'Leer y registrar datos de placa del motor', unit: '', order: 5 },
-  { id: 'power_cosfi', label: 'Potencia y Coseno φ', description: 'Identificar potencia activa y factor de potencia', unit: '', order: 6 },
+export const PANEL_STEPS_TRIFASICO = [
+  { id: 'voltage_ln', label: 'Tensión L-N', description: 'Medir tensión fase-neutro (220V nominal)', unit: 'V', order: 1 },
+  { id: 'voltage_ll', label: 'Tensión L-L', description: 'Medir tensión entre fases (380V nominal)', unit: 'V', order: 2 },
+  { id: 'voltage_imbalance', label: 'Desbalance de Tensión', description: 'Verificar desbalance entre fases (≤2% EDESA)', unit: '%', order: 3 },
+  { id: 'current_r', label: 'Corriente Fase R', description: 'Medir corriente en fase R (A)', unit: 'A', order: 4 },
+  { id: 'current_s', label: 'Corriente Fase S', description: 'Medir corriente en fase S (A)', unit: 'A', order: 5 },
+  { id: 'current_t', label: 'Corriente Fase T', description: 'Medir corriente en fase T (A)', unit: 'A', order: 6 },
+  { id: 'current_neutral', label: 'Corriente de Neutro', description: 'Medir corriente de neutro (A)', unit: 'A', order: 7 },
+  { id: 'conductors', label: 'Identificar Conductores', description: 'Identificar conductores (R, S, T, neutro, tierra) — colores AEA 90364', unit: '', order: 8 },
+  { id: 'distribution', label: 'Verificar Distribución', description: 'Verificar distribución de circuitos y protecciones termomagnéticas', unit: '', order: 9 },
+  { id: 'differential', label: 'Protección Diferencial', description: 'Verificar disyuntor diferencial (≤30mA)', unit: '', order: 10 },
+  { id: 'grounding', label: 'Control Puesta a Tierra', description: 'Medir resistencia de puesta a tierra (Ω) — IRAM 2281', unit: 'Ω', order: 11 },
+  { id: 'terminals', label: 'Verificar Terminales', description: 'Verificar estado de terminales y conexiones', unit: '', order: 12 },
+  { id: 'torque', label: 'Ajustar Torque', description: 'Verificar y ajustar torque de borneras (Nm)', unit: 'Nm', order: 13 },
 ] as const
+
+// Backward-compatible alias (defaults to monofásico)
+export const PANEL_STEPS = PANEL_STEPS_MONOFASICO
+
+// Motor check steps — monofásico and trifásico
+export const MOTOR_STEPS_MONOFASICO = [
+  { id: 'voltage', label: 'Tensión en Bornes', description: 'Medir tensión en bornes del motor monofásico (220V)', unit: 'V', order: 1 },
+  { id: 'current', label: 'Corriente de Trabajo', description: 'Medir corriente de trabajo del motor (A)', unit: 'A', order: 2 },
+  { id: 'current_start', label: 'Corriente de Arranque', description: 'Medir corriente de arranque (A)', unit: 'A', order: 3 },
+  { id: 'coil_resistance', label: 'Resistencia de Bobinas', description: 'Medir resistencia de bobinas (principal y auxiliar) (Ω)', unit: 'Ω', order: 4 },
+  { id: 'insulation', label: 'Aislamiento (Bobina-Carcasa)', description: 'Medir resistencia de aislamiento bobina a carcasa (MΩ)', unit: 'MΩ', order: 5 },
+  { id: 'nameplate', label: 'Lectura de Placa', description: 'Leer y registrar datos de placa del motor', unit: '', order: 6 },
+  { id: 'power_cosfi', label: 'Potencia y Coseno φ', description: 'Identificar potencia activa y factor de potencia', unit: '', order: 7 },
+] as const
+
+export const MOTOR_STEPS_TRIFASICO = [
+  { id: 'voltage_ln', label: 'Tensión L-N en Bornes', description: 'Medir tensión fase-neutro en bornes del motor (220V)', unit: 'V', order: 1 },
+  { id: 'voltage_ll', label: 'Tensión L-L en Bornes', description: 'Medir tensión entre fases en bornes del motor (380V)', unit: 'V', order: 2 },
+  { id: 'current_r', label: 'Corriente Fase R', description: 'Medir corriente en fase R (A)', unit: 'A', order: 3 },
+  { id: 'current_s', label: 'Corriente Fase S', description: 'Medir corriente en fase S (A)', unit: 'A', order: 4 },
+  { id: 'current_t', label: 'Corriente Fase T', description: 'Medir corriente en fase T (A)', unit: 'A', order: 5 },
+  { id: 'coil_resistance', label: 'Resistencia de Bobinas', description: 'Medir resistencia de bobinas R1, R2, R3 (Ω)', unit: 'Ω', order: 6 },
+  { id: 'insulation', label: 'Aislamiento (Bobina-Carcasa)', description: 'Medir resistencia de aislamiento bobina a carcasa (MΩ)', unit: 'MΩ', order: 7 },
+  { id: 'nameplate', label: 'Lectura de Placa', description: 'Leer y registrar datos de placa del motor trifásico', unit: '', order: 8 },
+  { id: 'power_cosfi', label: 'Potencia y Coseno φ', description: 'Identificar potencia activa y factor de potencia trifásico', unit: '', order: 9 },
+] as const
+
+// Backward-compatible alias (defaults to monofásico)
+export const MOTOR_STEPS = MOTOR_STEPS_MONOFASICO
 
 // EPP items
 export const EPP_ITEMS = [
@@ -64,6 +106,7 @@ export interface Session {
   code: string
   status: SessionStatus
   currentStage: SessionStage
+  systemType: SystemType    // monofasico | trifasico
   tecnicoId: string
   auditorId: string | null
   tecnicoName: string
@@ -178,20 +221,22 @@ export interface CostItem {
   isActive: boolean
 }
 
-// Motor nameplate data
+// Motor nameplate data — supports monofásico and trifásico
 export interface MotorNameplate {
   brand: string
   model: string
   powerHp: string
   powerKw: string
-  voltage: string
-  current: string
+  voltage: string          // Monofásico: 220V | Trifásico: 220/380V
+  current: string          // Monofásico: corriente nominal | Trifásico: corriente por fase
   frequency: string
   rpm: string
   cosFi: string
   serviceFactor: string
   insulation: string
-  connection: string
+  connection: string       // Monofásico: directo/capacitor | Trifásico: estrella/triángulo
+  systemType: SystemType   // monofasico | trifasico
+  voltage_ll?: string     // Solo trifásico: tensión entre fases (380V)
 }
 
 // Analysis calculation results

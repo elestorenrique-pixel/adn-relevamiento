@@ -216,3 +216,100 @@ Stage Summary:
 - Demo mode enables solo testing of complete flow
 - Chat service running for real-time communication
 - All PDF documents include logo, instructor credits, and proper formatting
+
+---
+Task ID: 12
+Agent: Main Agent
+Task: Update Zustand store and ALL frontend components to support monofásico/trifásico system types
+
+Work Log:
+- Updated src/lib/store.ts:
+  - Added `systemType: SystemType` to store state (default: 'monofasico')
+  - Added `setSystemType` action
+  - Updated `createSession` to accept systemType parameter and set it on the session
+  - Updated `initPanelSteps` to accept systemType parameter and use PANEL_STEPS_MONOFASICO or PANEL_STEPS_TRIFASICO
+  - Updated `initMotorSteps` to accept systemType parameter and use MOTOR_STEPS_MONOFASICO or MOTOR_STEPS_TRIFASICO
+  - Updated `panelRegisterMeasurement` to handle new step IDs: voltage_ln, voltage_ll, voltage_imbalance, current_phase, current_r, current_s, current_t, current_neutral, differential
+  - Updated `motorRegisterMeasurement` to handle new step IDs: voltage_ln, voltage_ll, current_r, current_s, current_t, current_start
+  - Updated `nameplateData` default to include `systemType: 'monofasico'` and `voltage_ll: ''`
+  - Updated `generateAnalysis` to use correct formula: Monofásico P=V*I*cosFi/1000, Trifásico P=V_LL*I*cosFi*√3/1000
+  - Imported new step constants (PANEL_STEPS_MONOFASICO, PANEL_STEPS_TRIFASICO, MOTOR_STEPS_MONOFASICO, MOTOR_STEPS_TRIFASICO)
+  - Persisted `systemType` in the store's partialize config
+
+- Updated src/components/LobbyScreen.tsx:
+  - Added system type selector with two cards: "Monofásico 220V" and "Trifásico 380V" BEFORE creating a session
+  - Added Zap/CircuitBoard icons for each system type
+  - Added system type badge on session cards in history (e.g., "220V Mono" or "380V Tri")
+  - Pass selectedSystemType when creating session
+
+- Updated src/components/PanelCheckStage.tsx:
+  - Get systemType from store and use correct steps (PANEL_STEPS_MONOFASICO or PANEL_STEPS_TRIFASICO)
+  - Show "220V Monofásico" or "380V Trifásico" badge in header
+  - For trifásico, show info card about voltage imbalance verification
+  - Updated `getNormativeFeedback` for new step IDs: voltage_ln (198-242V), voltage_ll (342-418V), voltage_imbalance (≤2%)
+
+- Updated src/components/MotorCheckStage.tsx:
+  - Get systemType from store and use correct steps (MOTOR_STEPS_MONOFASICO or MOTOR_STEPS_TRIFASICO)
+  - For monofásico: voltage (220V), current (trabajo), current_start (arranque), coil resistance (principal/auxiliar)
+  - For trifásico: voltage_ln (220V), voltage_ll (380V), current per phase (R, S, T), coil resistance (R1, R2, R3)
+  - Added nameplate fields for connection type: Monofásico: "directo/capacitor", Trifásico: "estrella (Y)/triángulo (Δ)"
+  - Added voltage_ll field in nameplate for trifásico
+  - Updated `getNormativeFeedback` for new step IDs: voltage_ln, voltage_ll, power_cosfi
+
+- Updated src/components/AnalysisStage.tsx:
+  - Show system type badge in the analysis header ("Monofásico" or "Trifásico")
+  - Show formula explanation card (P = V*I*cosFi/1000 for mono, P = V_LL*I*cosFi*√3/1000 for tri)
+  - Updated the triangle of powers label to show system type badge
+  - Formula description in the "Generate Analysis" prompt varies by system type
+
+- Updated src/components/DocumentsStage.tsx:
+  - Added "Sistema" field to session info section with system type badge
+  - Added system type info to generated PDFs (header right column: "Sistema: Trifásico 380V" or "Sistema: Monofásico 220V")
+  - Updated panelLabels and motorLabels dictionaries with all new step IDs for proper PDF generation
+
+- Updated src/components/SessionScreen.tsx:
+  - Added system type badge in header center section (desktop) and next to session code (mobile)
+  - Badge shows "380V Tri" or "220V Mono" with appropriate colors (sky for trifásico, amber for monofásico)
+
+- Normative Validation Rules implemented:
+  - Panel: voltage_ln 198-242V (both), voltage_ll 342-418V (trifásico), voltage_imbalance ≤2% (trifásico), grounding ≤10Ω (both), torque 1.2-2.5 Nm (both)
+  - Motor: voltage_ln 198-242V (both), voltage_ll 342-418V (trifásico), insulation ≥1MΩ (both), coil_resistance balance ≤5% (both), power_cosfi ≥0.85 (both)
+
+Stage Summary:
+- Full monofásico/trifásico system type support across the entire application
+- System type selection available in Lobby before creating a session
+- Steps dynamically change based on system type (9 steps mono, 13 steps tri for panel; 7 steps mono, 9 steps tri for motor)
+- Power analysis formulas correctly differentiate between mono and tri
+- All UI components show system type badges consistently
+- PDF documents include system type information
+- Lint: Clean pass, 0 errors
+
+---
+Task ID: Correction-1
+Agent: Main Agent
+Task: Rename ADL → ADN and add trifásico/monofásico support
+
+Work Log:
+- Renamed ALL instances of "ADL Técnico" → "ADN Técnico" across the entire codebase (8+ files)
+- Renamed logo file: adl-logo.png → adn-logo.png
+- Updated src/lib/types.ts with SystemType, new PANEL_STEPS_MONOFASICO/TRIFASICO, MOTOR_STEPS_MONOFASICO/TRIFASICO
+- Added SystemType to Session and MotorNameplate interfaces
+- Updated src/lib/normative.ts with validateVoltageImbalance() for trifásico, updated auditor suggestions for new step IDs
+- Updated src/lib/store.ts with systemType state, dynamic step initialization, correct power formulas (P=V*I*cosFi for mono, P=V*I*cosFi*√3 for tri)
+- Updated src/components/LobbyScreen.tsx with system type selector (Monofásico 220V / Trifásico 380V)
+- Updated src/components/PanelCheckStage.tsx with dynamic steps per system type, normative feedback for voltage_ln, voltage_ll, voltage_imbalance
+- Updated src/components/MotorCheckStage.tsx with dynamic steps per system type, nameplate connection types (directo/capacitor vs estrella/triángulo)
+- Updated src/components/AnalysisStage.tsx with system type badge and formula display
+- Updated src/components/DocumentsStage.tsx with system type in document info and PDFs
+- Updated src/components/SessionScreen.tsx with system type badge in header
+- Updated src/app/api/pdf/generate/route.ts with all new step labels for PDF generation
+- Verified lint: Clean pass, 0 errors
+- Verified dev server: No compilation errors, app renders correctly
+
+Stage Summary:
+- Project renamed from ADL Técnico to ADN Técnico
+- Full trifásico (380V) and monofásico (220V) support implemented
+- Panel checkout: 9 steps (mono) / 13 steps (tri) including voltage L-N/L-L, phase currents, differential protection
+- Motor checkout: 7 steps (mono) / 9 steps (tri) including per-phase currents, startup current, coil balance
+- Power analysis: correct formulas for each system type
+- Normative validation: voltage imbalance ≤2% for trifásico, voltage L-L 342-418V range

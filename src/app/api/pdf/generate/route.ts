@@ -11,7 +11,7 @@ import path from 'path'
 const INSTRUCTOR = 'Prof. Héctor Cruz'
 const COURSE_INFO = 'Taller y Laboratorio de 3° año - Instalaciones Eléctricas'
 
-// Helper to add ADL Técnico header to PDF (with logo)
+// Helper to add ADN Técnico header to PDF (with logo)
 function addHeader(doc: jsPDF, title: string, session: { code: string; tecnico: { name: string } | null; auditor: { name: string } | null; createdAt: Date }) {
   // Header background
   doc.setFillColor(30, 58, 46) // Dark green
@@ -19,7 +19,7 @@ function addHeader(doc: jsPDF, title: string, session: { code: string; tecnico: 
 
   // Try to add logo
   try {
-    const logoPath = path.join(process.cwd(), 'public', 'adl-logo.png')
+    const logoPath = path.join(process.cwd(), 'public', 'adn-logo.png')
     if (fs.existsSync(logoPath)) {
       const logoData = fs.readFileSync(logoPath)
       doc.addImage(logoData, 'PNG', 14, 3, 22, 22)
@@ -32,7 +32,7 @@ function addHeader(doc: jsPDF, title: string, session: { code: string; tecnico: 
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(16)
   doc.setFont('helvetica', 'bold')
-  doc.text('ADL Técnico', 40, 12)
+  doc.text('ADN Técnico', 40, 12)
 
   // Course info
   doc.setFontSize(8)
@@ -82,7 +82,7 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
   doc.rect(0, pageHeight - 15, 210, 15, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(7)
-  doc.text(`ADL Técnico - Simulación Educativa | ${INSTRUCTOR} | AEA 90364 / IRAM / EDESA`, 14, pageHeight - 6)
+  doc.text(`ADN Técnico - Simulación Educativa | ${INSTRUCTOR} | AEA 90364 / IRAM / EDESA`, 14, pageHeight - 6)
   doc.text(`Página ${pageNum} de ${totalPages}`, 196, pageHeight - 6, { align: 'right' })
   doc.setTextColor(0, 0, 0)
 }
@@ -160,9 +160,18 @@ function generateRelevamiento(
 
   const panelLabels: Record<string, string> = {
     voltage: 'Medir Tensión',
+    voltage_ln: 'Tensión L-N',
+    voltage_ll: 'Tensión L-L',
+    voltage_imbalance: 'Desbalance de Tensión',
     current: 'Medir Corriente',
+    current_phase: 'Corriente de Fase',
+    current_neutral: 'Corriente de Neutro',
+    current_r: 'Corriente Fase R',
+    current_s: 'Corriente Fase S',
+    current_t: 'Corriente Fase T',
     conductors: 'Identificar Conductores',
     distribution: 'Verificar Distribución',
+    differential: 'Protección Diferencial',
     grounding: 'Control Puesta a Tierra',
     terminals: 'Verificar Terminales',
     torque: 'Ajustar Torque',
@@ -193,7 +202,13 @@ function generateRelevamiento(
 
   const motorLabels: Record<string, string> = {
     voltage: 'Medir Tensión',
+    voltage_ln: 'Tensión L-N en Bornes',
+    voltage_ll: 'Tensión L-L en Bornes',
     current: 'Medir Corriente',
+    current_start: 'Corriente de Arranque',
+    current_r: 'Corriente Fase R',
+    current_s: 'Corriente Fase S',
+    current_t: 'Corriente Fase T',
     coil_resistance: 'Resistencia de Bobinas',
     insulation: 'Aislamiento (Bobina-Carcasa)',
     nameplate: 'Lectura de Placa',
@@ -377,9 +392,19 @@ function generateAuditoria(
     block: 'Bloqueo / Señalización',
     signal: 'Delimitar Zona de Trabajo',
     voltage: 'Medir Tensión',
+    voltage_ln: 'Tensión L-N',
+    voltage_ll: 'Tensión L-L',
+    voltage_imbalance: 'Desbalance de Tensión',
     current: 'Medir Corriente',
+    current_phase: 'Corriente de Fase',
+    current_neutral: 'Corriente de Neutro',
+    current_r: 'Corriente Fase R',
+    current_s: 'Corriente Fase S',
+    current_t: 'Corriente Fase T',
+    current_start: 'Corriente de Arranque',
     conductors: 'Identificar Conductores',
     distribution: 'Verificar Distribución',
+    differential: 'Protección Diferencial',
     terminals: 'Verificar Terminales',
     torque: 'Ajustar Torque',
     coil_resistance: 'Resistencia de Bobinas',
@@ -988,7 +1013,7 @@ export async function POST(request: NextRequest) {
       }
 
       const pdfBase64 = doc.output('datauristring').split(',')[1]
-      const filename = `ADL_${type}_${session.code}.pdf`
+      const filename = `ADN_${type}_${session.code}.pdf`
 
       // Save document record in database
       await db.generatedDocument.create({

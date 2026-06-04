@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ADL Técnico - Simulación Eléctrica Industrial",
+  title: "ADN Técnico - Simulación Eléctrica Industrial",
   description: "Plataforma educativa de simulación y evaluación eléctrica industrial. Taller y Laboratorio de 3° año - Instalaciones Eléctricas. Prof. Héctor Cruz",
-  keywords: ["ADL Técnico", "eléctrica", "industrial", "simulación", "educación", "normativa", "AEA", "IRAM", "EDESA"],
-  authors: [{ name: "Prof. Héctor Cruz - ADL Técnico" }],
+  keywords: ["ADN Técnico", "eléctrica", "industrial", "simulación", "educación", "normativa", "AEA", "IRAM", "EDESA"],
+  authors: [{ name: "Prof. Héctor Cruz - ADN Técnico" }],
 };
 
 export default function RootLayout({

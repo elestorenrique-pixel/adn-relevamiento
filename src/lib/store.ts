@@ -14,11 +14,14 @@ import type {
   UserRole,
   SessionStage,
   NormativeStatus,
+  SystemType,
 } from '@/lib/types'
 import {
   SAFETY_STEPS,
-  PANEL_STEPS,
-  MOTOR_STEPS,
+  PANEL_STEPS_MONOFASICO,
+  PANEL_STEPS_TRIFASICO,
+  MOTOR_STEPS_MONOFASICO,
+  MOTOR_STEPS_TRIFASICO,
   EPP_ITEMS,
 } from '@/lib/types'
 
@@ -50,7 +53,9 @@ export interface AppStore {
   // ── Session ──
   currentSession: Session | null
   sessions: Session[]
-  createSession: () => Promise<string | null>
+  systemType: SystemType
+  setSystemType: (type: SystemType) => void
+  createSession: (systemType?: SystemType) => Promise<string | null>
   joinSession: (code: string) => Promise<boolean>
   leaveSession: () => void
   setSession: (session: Session) => void
@@ -73,7 +78,7 @@ export interface AppStore {
 
   // ── Panel ──
   panelSteps: PanelCheckItem[]
-  initPanelSteps: (sessionId: string) => void
+  initPanelSteps: (sessionId: string, systemType: SystemType) => void
   panelRegisterMeasurement: (stepId: string, value: string, notes?: string) => void
   panelValidateStep: (stepId: string, passed: boolean, notes?: string, errors?: string) => void
   panelAutoValidateAll: () => void
@@ -82,7 +87,7 @@ export interface AppStore {
   // ── Motor ──
   motorSteps: MotorCheckItem[]
   nameplateData: Record<string, string>
-  initMotorSteps: (sessionId: string) => void
+  initMotorSteps: (sessionId: string, systemType: SystemType) => void
   motorRegisterMeasurement: (stepId: string, value: string, notes?: string) => void
   motorValidateStep: (stepId: string, passed: boolean, notes?: string, errors?: string) => void
   motorAutoValidateAll: () => void
@@ -227,10 +232,15 @@ export const useStore = create<AppStore>()(
       // ══════════════════════════════════════════════════
       currentSession: null,
       sessions: [],
+      systemType: 'monofasico' as SystemType,
 
-      createSession: async () => {
+      setSystemType: (type: SystemType) => set({ systemType: type }),
+
+      createSession: async (systemTypeOverride?: SystemType) => {
         const user = get().user
         if (!user) return null
+
+        const st = systemTypeOverride || get().systemType
 
         set({ isLoading: true, loadingMessage: 'Creando sesión...' })
 
@@ -239,6 +249,7 @@ export const useStore = create<AppStore>()(
           code: generateCode(),
           status: 'safety',
           currentStage: 'safety',
+          systemType: st,
           tecnicoId: '',
           auditorId: null,
           tecnicoName: '',
@@ -261,13 +272,14 @@ export const useStore = create<AppStore>()(
           sessions: [session, ...s.sessions],
           currentScreen: 'session',
           currentStage: 'safety' as SessionStage,
+          systemType: st,
           isLoading: false,
           loadingMessage: null,
         }))
 
         get().initSafetySteps(session.id)
-        get().initPanelSteps(session.id)
-        get().initMotorSteps(session.id)
+        get().initPanelSteps(session.id, st)
+        get().initMotorSteps(session.id, st)
 
         return session.code
       },
@@ -289,26 +301,30 @@ export const useStore = create<AppStore>()(
             updated.tecnicoId = user.id
             updated.tecnicoName = user.name
           }
+          const st = updated.systemType || 'monofasico'
           set((s) => ({
             currentSession: updated,
             sessions: s.sessions.map((sess) => (sess.id === updated.id ? updated : sess)),
             currentScreen: 'session',
             currentStage: updated.currentStage as SessionStage,
+            systemType: st,
             isLoading: false,
             loadingMessage: null,
           }))
           get().initSafetySteps(updated.id)
-          get().initPanelSteps(updated.id)
-          get().initMotorSteps(updated.id)
+          get().initPanelSteps(updated.id, st)
+          get().initMotorSteps(updated.id, st)
           return true
         }
 
         // Demo: create a session with the provided code
+        const st = get().systemType
         const session: Session = {
           id: generateId(),
           code,
           status: 'safety',
           currentStage: 'safety',
+          systemType: st,
           tecnicoId: user.role === 'tecnico' ? user.id : 'pending',
           auditorId: user.role === 'auditor' ? user.id : null,
           tecnicoName: user.role === 'tecnico' ? user.name : 'Pendiente',
@@ -323,12 +339,13 @@ export const useStore = create<AppStore>()(
           sessions: [session, ...s.sessions],
           currentScreen: 'session',
           currentStage: 'safety' as SessionStage,
+          systemType: st,
           isLoading: false,
           loadingMessage: null,
         }))
         get().initSafetySteps(session.id)
-        get().initPanelSteps(session.id)
-        get().initMotorSteps(session.id)
+        get().initPanelSteps(session.id, st)
+        get().initMotorSteps(session.id, st)
         return true
       },
 
@@ -437,8 +454,9 @@ export const useStore = create<AppStore>()(
       // ══════════════════════════════════════════════════
       panelSteps: [],
 
-      initPanelSteps: (sessionId: string) => {
-        const steps: PanelCheckItem[] = PANEL_STEPS.map((s) => ({
+      initPanelSteps: (sessionId: string, systemType: SystemType) => {
+        const stepsDef = systemType === 'trifasico' ? PANEL_STEPS_TRIFASICO : PANEL_STEPS_MONOFASICO
+        const steps: PanelCheckItem[] = stepsDef.map((s) => ({
           id: generateId(),
           sessionId,
           step: s.id,
@@ -458,13 +476,17 @@ export const useStore = create<AppStore>()(
         let normativeStatus: NormativeStatus = 'pending'
         const numValue = parseFloat(value)
 
-        if (stepId === 'voltage' && !isNaN(numValue)) {
+        if (stepId === 'voltage_ln' && !isNaN(numValue)) {
           normativeStatus = (numValue >= 198 && numValue <= 242) ? 'passed' : 'failed'
+        } else if (stepId === 'voltage_ll' && !isNaN(numValue)) {
+          normativeStatus = (numValue >= 342 && numValue <= 418) ? 'passed' : 'failed'
+        } else if (stepId === 'voltage_imbalance' && !isNaN(numValue)) {
+          normativeStatus = numValue <= 2 ? 'passed' : 'failed'
         } else if (stepId === 'grounding' && !isNaN(numValue)) {
           normativeStatus = numValue <= 10 ? 'passed' : 'failed'
         } else if (stepId === 'torque' && !isNaN(numValue)) {
           normativeStatus = (numValue >= 1.2 && numValue <= 2.5) ? 'passed' : 'failed'
-        } else if (stepId === 'current' && !isNaN(numValue)) {
+        } else if (['current_phase', 'current_r', 'current_s', 'current_t', 'current_neutral', 'differential'].includes(stepId) && !isNaN(numValue)) {
           normativeStatus = 'passed'
         } else if (value.trim() !== '') {
           normativeStatus = 'passed'
@@ -532,10 +554,12 @@ export const useStore = create<AppStore>()(
         brand: '', model: '', powerHp: '', powerKw: '',
         voltage: '', current: '', frequency: '', rpm: '',
         cosFi: '', serviceFactor: '', insulation: '', connection: '',
+        systemType: 'monofasico', voltage_ll: '',
       },
 
-      initMotorSteps: (sessionId: string) => {
-        const steps: MotorCheckItem[] = MOTOR_STEPS.map((s) => ({
+      initMotorSteps: (sessionId: string, systemType: SystemType) => {
+        const stepsDef = systemType === 'trifasico' ? MOTOR_STEPS_TRIFASICO : MOTOR_STEPS_MONOFASICO
+        const steps: MotorCheckItem[] = stepsDef.map((s) => ({
           id: generateId(),
           sessionId,
           step: s.id,
@@ -548,7 +572,14 @@ export const useStore = create<AppStore>()(
           normativeStatus: 'pending' as NormativeStatus,
           order: s.order,
         }))
-        set({ motorSteps: steps })
+        set({
+          motorSteps: steps,
+          nameplateData: {
+            ...get().nameplateData,
+            systemType: systemType,
+            voltage_ll: systemType === 'trifasico' ? '' : '',
+          },
+        })
       },
 
       motorRegisterMeasurement: (stepId: string, value: string, notes?: string) => {
@@ -557,9 +588,13 @@ export const useStore = create<AppStore>()(
 
         if (stepId === 'voltage' && !isNaN(numValue)) {
           normativeStatus = (numValue >= 198 && numValue <= 242) ? 'passed' : 'failed'
+        } else if (stepId === 'voltage_ln' && !isNaN(numValue)) {
+          normativeStatus = (numValue >= 198 && numValue <= 242) ? 'passed' : 'failed'
+        } else if (stepId === 'voltage_ll' && !isNaN(numValue)) {
+          normativeStatus = (numValue >= 342 && numValue <= 418) ? 'passed' : 'failed'
         } else if (stepId === 'insulation' && !isNaN(numValue)) {
           normativeStatus = numValue >= 1 ? 'passed' : 'failed'
-        } else if (stepId === 'current' && !isNaN(numValue)) {
+        } else if (['current', 'current_r', 'current_s', 'current_t', 'current_start'].includes(stepId) && !isNaN(numValue)) {
           normativeStatus = 'passed'
         } else if (value.trim() !== '') {
           normativeStatus = 'passed'
@@ -632,10 +667,28 @@ export const useStore = create<AppStore>()(
       isAnalysisGenerated: false,
 
       generateAnalysis: () => {
-        const { motorSteps, nameplateData, currentSession } = get()
+        const { motorSteps, nameplateData, currentSession, systemType } = get()
 
-        const voltageStr = motorSteps.find(s => s.step === 'voltage')?.tecnicoValue || '220'
-        const currentStr = motorSteps.find(s => s.step === 'current')?.tecnicoValue || '10'
+        // Get voltage value based on system type
+        const voltageStr = motorSteps.find(s => s.step === 'voltage_ln')?.tecnicoValue
+          || motorSteps.find(s => s.step === 'voltage')?.tecnicoValue
+          || '220'
+        const voltageLlStr = motorSteps.find(s => s.step === 'voltage_ll')?.tecnicoValue || '380'
+
+        // Get current value based on system type
+        let currentStr = '10'
+        if (systemType === 'trifasico') {
+          // For trifásico, use average of phase currents or single current
+          const iR = parseFloat(motorSteps.find(s => s.step === 'current_r')?.tecnicoValue || '0')
+          const iS = parseFloat(motorSteps.find(s => s.step === 'current_s')?.tecnicoValue || '0')
+          const iT = parseFloat(motorSteps.find(s => s.step === 'current_t')?.tecnicoValue || '0')
+          if (iR > 0 || iS > 0 || iT > 0) {
+            currentStr = ((iR + iS + iT) / 3).toString()
+          }
+        } else {
+          currentStr = motorSteps.find(s => s.step === 'current')?.tecnicoValue || '10'
+        }
+
         const cosFiStr = motorSteps.find(s => s.step === 'power_cosfi')?.tecnicoValue || nameplateData.cosFi || '0.85'
         const powerKwStr = nameplateData.powerKw || '5.5'
 
@@ -645,8 +698,21 @@ export const useStore = create<AppStore>()(
         const Pplate = parseFloat(powerKwStr) || 5.5
         const cosFiPlate = parseFloat(nameplateData.cosFi) || 0.85
 
-        const PactiveMeasured = V * I * cosFiMeasured * 1.732 / 1000
-        const SapparentMeasured = V * I * 1.732 / 1000
+        // Different formulas for monofásico vs trifásico
+        let PactiveMeasured: number
+        let SapparentMeasured: number
+
+        if (systemType === 'trifasico') {
+          // Trifásico: P = V_LL * I * cosFi * √3 / 1000
+          const Vll = parseFloat(voltageLlStr) || 380
+          PactiveMeasured = Vll * I * cosFiMeasured * Math.sqrt(3) / 1000
+          SapparentMeasured = Vll * I * Math.sqrt(3) / 1000
+        } else {
+          // Monofásico: P = V * I * cosFi / 1000
+          PactiveMeasured = V * I * cosFiMeasured / 1000
+          SapparentMeasured = V * I / 1000
+        }
+
         const QreactiveMeasured = Math.sqrt(Math.max(0, SapparentMeasured ** 2 - PactiveMeasured ** 2))
         const SapparentPlate = Pplate / cosFiPlate
         const QreactivePlate = Math.sqrt(Math.max(0, SapparentPlate ** 2 - Pplate ** 2))
@@ -717,6 +783,7 @@ export const useStore = create<AppStore>()(
         currentStage: state.currentStage,
         currentSession: state.currentSession,
         sessions: state.sessions,
+        systemType: state.systemType,
         demoMode: state.demoMode,
         safetySteps: state.safetySteps,
         eppChecks: state.eppChecks,

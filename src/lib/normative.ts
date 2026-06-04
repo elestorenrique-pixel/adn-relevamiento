@@ -76,7 +76,7 @@ const AEA_RULES = {
   }
 }
 
-// Validate voltage measurements
+// Validate voltage measurements — supports monofásico (220V) and trifásico (380V)
 export function validateVoltage(
   phase: string,
   measuredVoltage: number,
@@ -88,13 +88,41 @@ export function validateVoltage(
   return {
     passed,
     rule: rule.rule,
-    source: 'EDESA',
+    source: isThreePhase ? 'EDESA/IRAM 2071' : 'EDESA',
     severity: passed ? 'info' : 'error',
     message: passed
       ? `Tensión ${phase} dentro de rango (${rule.min}-${rule.max}V)`
       : `Tensión ${phase} FUERA de rango (${rule.min}-${rule.max}V). ${rule.desc}`,
     value: `${measuredVoltage}V`,
     expected: `${rule.min}-${rule.max}V`
+  }
+}
+
+// Validate voltage imbalance between phases (trifásico only)
+export function validateVoltageImbalance(
+  vR: number,
+  vS: number,
+  vT: number
+): NormativeValidation {
+  const avg = (vR + vS + vT) / 3
+  const maxDeviation = Math.max(
+    Math.abs(vR - avg) / avg * 100,
+    Math.abs(vS - avg) / avg * 100,
+    Math.abs(vT - avg) / avg * 100
+  )
+  const rule = EDESA_RULES.voltage.imbalance
+  const passed = maxDeviation <= rule.maxPercent
+
+  return {
+    passed,
+    rule: rule.rule,
+    source: 'EDESA',
+    severity: passed ? 'info' : 'warning',
+    message: passed
+      ? `Desbalance de tensión OK (${maxDeviation.toFixed(1)}% ≤ ${rule.maxPercent}%)`
+      : `Desbalance de tensión EXCEDIDO (${maxDeviation.toFixed(1)}% > ${rule.maxPercent}%). ${rule.desc}`,
+    value: `${maxDeviation.toFixed(1)}%`,
+    expected: `≤${rule.maxPercent}%`
   }
 }
 
@@ -256,12 +284,24 @@ export function generateAuditorSuggestions(
     suggestions.push(`Paso "${step}" completado por técnico pero pendiente de validación del auditor.`)
   }
 
-  // Category-specific suggestions
+  // Category-specific suggestions — updated for monofásico/trifásico step IDs
   if (category === 'panel') {
-    if (step === 'voltage' && value) {
+    if ((step === 'voltage' || step === 'voltage_ln') && value) {
       const v = parseFloat(value)
       if (v < 198 || v > 242) {
-        suggestions.push(`ALERTA: Tensión fuera de rango normativo (198-242V). Verificar condición de suministro EDESA.`)
+        suggestions.push(`ALERTA: Tensión L-N fuera de rango normativo (198-242V). Verificar condición de suministro EDESA.`)
+      }
+    }
+    if (step === 'voltage_ll' && value) {
+      const v = parseFloat(value)
+      if (v < 342 || v > 418) {
+        suggestions.push(`ALERTA: Tensión L-L fuera de rango trifásico (342-418V). Verificar condición de suministro EDESA.`)
+      }
+    }
+    if (step === 'voltage_imbalance' && value) {
+      const v = parseFloat(value)
+      if (v > 2) {
+        suggestions.push(`ALERTA: Desbalance de tensión excedido (>2% EDESA). Verificar distribución de cargas.`)
       }
     }
     if (step === 'grounding' && value) {
@@ -279,6 +319,18 @@ export function generateAuditorSuggestions(
   }
 
   if (category === 'motor') {
+    if ((step === 'voltage' || step === 'voltage_ln') && value) {
+      const v = parseFloat(value)
+      if (v < 198 || v > 242) {
+        suggestions.push(`ALERTA: Tensión L-N en bornes fuera de rango (198-242V). Verificar alimentación.`)
+      }
+    }
+    if (step === 'voltage_ll' && value) {
+      const v = parseFloat(value)
+      if (v < 342 || v > 418) {
+        suggestions.push(`ALERTA: Tensión L-L en bornes fuera de rango trifásico (342-418V). Verificar alimentación.`)
+      }
+    }
     if (step === 'insulation' && value) {
       const r = parseFloat(value)
       if (r < 1) {

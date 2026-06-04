@@ -14,9 +14,11 @@ import { Separator } from '@/components/ui/separator'
 
 export default function AnalysisStage() {
   const {
-    user, analysisData, isAnalysisGenerated, generateAnalysis,
+    user, analysisData, isAnalysisGenerated, generateAnalysis, systemType,
     setStage, addNotification,
   } = useStore()
+
+  const isTrifasico = systemType === 'trifasico'
 
   const handleGenerate = () => {
     generateAnalysis()
@@ -43,10 +45,38 @@ export default function AnalysisStage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-100">Análisis de Potencia</h2>
-            <p className="text-sm text-slate-400">Cálculos y desviaciones vs. placa</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-slate-400">Cálculos y desviaciones vs. placa</p>
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                isTrifasico ? 'border-sky-500/50 text-sky-400' : 'border-amber-500/50 text-amber-400'
+              }`}>
+                {isTrifasico ? 'Trifásico' : 'Monofásico'}
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Formula explanation */}
+      <Card className="bg-slate-900 border-slate-700/50">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="text-amber-400 font-mono">
+              {isTrifasico
+                ? 'P = V_LL × I × cos φ × √3 / 1000'
+                : 'P = V × I × cos φ / 1000'
+              }
+            </span>
+            <span className="text-slate-600">|</span>
+            <span>
+              {isTrifasico
+                ? 'Sistema trifásico 380V — tensión entre fases'
+                : 'Sistema monofásico 220V — tensión fase-neutro'
+              }
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       {!isAnalysisGenerated ? (
         <motion.div
@@ -61,6 +91,10 @@ export default function AnalysisStage() {
           <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
             Se calcularán los valores de potencia activa, reactiva, aparente y factor de potencia
             comparando las mediciones con los datos de placa del motor.
+            {isTrifasico
+              ? ' Fórmula trifásica: P = V_LL × I × cos φ × √3 / 1000'
+              : ' Fórmula monofásica: P = V × I × cos φ / 1000'
+            }
           </p>
           <Button
             onClick={handleGenerate}
@@ -137,6 +171,11 @@ export default function AnalysisStage() {
                 <CardTitle className="text-sm text-slate-200 flex items-center gap-2">
                   <Triangle className="w-4 h-4 text-amber-500" />
                   Triángulo de Potencias
+                  <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ml-2 ${
+                    isTrifasico ? 'border-sky-500/50 text-sky-400' : 'border-amber-500/50 text-amber-400'
+                  }`}>
+                    {isTrifasico ? 'Trifásico' : 'Monofásico'}
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
