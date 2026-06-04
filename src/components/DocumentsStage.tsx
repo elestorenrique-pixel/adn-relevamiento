@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import {
   FileText, Download, Mail, Eye, Check, Printer,
-  ClipboardCheck, Receipt, FileSearch, Loader2
+  ClipboardCheck, Receipt, FileSearch, Loader2, User
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
@@ -123,240 +124,417 @@ export default function DocumentsStage() {
       // Fallback to client-side generation
     }
 
-    // Client-side fallback - generate a simple PDF
+    // Client-side fallback - generate a PDF with improved formatting
     try {
       const { default: jsPDF } = await import('jspdf')
       const doc = new jsPDF()
 
-      // Header
+      // Header with logo placeholder
       doc.setFillColor(30, 58, 46)
-      doc.rect(0, 0, 210, 35, 'F')
+      doc.rect(0, 0, 210, 40, 'F')
       doc.setTextColor(255, 255, 255)
-      doc.setFontSize(18)
+      doc.setFontSize(16)
       doc.setFont('helvetica', 'bold')
-      doc.text('ADL Tecnico', 14, 15)
-      doc.setFontSize(10)
+      doc.text('ADL Técnico', 14, 12)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'italic')
+      doc.text('Taller y Laboratorio de 3° año - Instalaciones Eléctricas', 14, 18)
       doc.setFont('helvetica', 'normal')
-      doc.text('Simulacion de Relevamiento Electrico Industrial', 14, 22)
+      doc.text('Instructor: Prof. Héctor Cruz', 14, 23)
 
       const titles: Record<string, string> = {
-        relevamiento: 'Informe de Relevamiento Electrico',
-        auditoria: 'Informe de Auditoria Electrica',
+        relevamiento: 'Informe de Relevamiento Eléctrico',
+        auditoria: 'Informe de Auditoría Eléctrica',
         presupuesto: 'Presupuesto - Correcciones y Materiales',
       }
 
-      doc.setFontSize(14)
+      doc.setFontSize(13)
       doc.setFont('helvetica', 'bold')
-      doc.text(titles[docType] || 'Documento', 14, 31)
+      doc.text(titles[docType] || 'Documento', 14, 32)
 
-      // Session info
-      doc.setTextColor(0, 0, 0)
-      doc.setFontSize(10)
+      // Session info on right
+      doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
-      let y = 45
+      doc.text(`Código: ${currentSession?.code || 'N/A'}`, 196, 12, { align: 'right' })
+      doc.text(`Técnico: ${currentSession?.tecnicoName || user?.name || 'N/A'}`, 196, 18, { align: 'right' })
+      doc.text(`Auditor: ${currentSession?.auditorName || 'N/A'}`, 196, 24, { align: 'right' })
+      doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 196, 30, { align: 'right' })
 
-      doc.text(`Codigo: ${currentSession?.code || 'N/A'}`, 14, y); y += 6
-      doc.text(`Tecnico: ${currentSession?.tecnicoName || user?.name || 'N/A'}`, 14, y); y += 6
-      doc.text(`Auditor: ${currentSession?.auditorName || 'N/A'}`, 14, y); y += 6
-      doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 14, y); y += 10
+      // Instructor/Course info box
+      let y = 46
+      doc.setFillColor(240, 245, 240)
+      doc.rect(14, y - 3, 182, 12, 'F')
+      doc.setDrawColor(30, 58, 46)
+      doc.rect(14, y - 3, 182, 12, 'S')
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(30, 58, 46)
+      doc.text('Taller y Laboratorio de 3° año - Instalaciones Eléctricas', 16, y + 2)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(80, 80, 80)
+      doc.text('Instructor: Prof. Héctor Cruz | AEA 90364 / IRAM / EDESA', 16, y + 7)
+      y += 16
+
+      // Helper to add colored section header
+      const addSectionHeader = (text: string, yPos: number): number => {
+        doc.setFillColor(30, 58, 46)
+        doc.rect(14, yPos - 4, 182, 8, 'F')
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.text(text, 16, yPos + 1)
+        doc.setTextColor(0, 0, 0)
+        return yPos + 8
+      }
+
+      // Helper to check page overflow
+      const checkPage = (yPos: number, needed: number = 30): number => {
+        if (yPos + needed > 265) { doc.addPage(); return 20 }
+        return yPos
+      }
+
+      const stepLabels: Record<string, string> = {
+        identify: 'Identificar',
+        verify_zero: 'Verificar Ausencia de Tensión',
+        grounding: 'Puesta a Tierra',
+        block: 'Bloqueo / Señalización',
+        signal: 'Delimitar Zona de Trabajo',
+      }
+      const panelLabels: Record<string, string> = {
+        voltage: 'Medir Tensión',
+        current: 'Medir Corriente',
+        conductors: 'Identificar Conductores',
+        distribution: 'Verificar Distribución',
+        grounding: 'Control Puesta a Tierra',
+        terminals: 'Verificar Terminales',
+        torque: 'Ajustar Torque',
+      }
+      const motorLabels: Record<string, string> = {
+        voltage: 'Medir Tensión',
+        current: 'Medir Corriente',
+        coil_resistance: 'Resistencia de Bobinas',
+        insulation: 'Aislamiento (Bobina-Carcasa)',
+        nameplate: 'Lectura de Placa',
+        power_cosfi: 'Potencia y Coseno φ',
+      }
 
       if (docType === 'relevamiento') {
-        // Safety
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(30, 58, 46)
-        doc.text('1. Verificaciones de Seguridad - 5 Reglas de Oro', 14, y); y += 7
-        doc.setTextColor(0, 0, 0)
+        // 1. Safety
+        y = addSectionHeader('1. Verificaciones de Seguridad - 5 Reglas de Oro', y)
         doc.setFontSize(9)
         doc.setFont('helvetica', 'normal')
-
-        const stepLabels: Record<string, string> = {
-          identify: 'Identificar',
-          verify_zero: 'Verificar Ausencia de Tension',
-          grounding: 'Puesta a Tierra',
-          block: 'Bloqueo / Senalizacion',
-          signal: 'Delimitar Zona de Trabajo',
-        }
+        doc.setTextColor(0, 0, 0)
 
         for (const step of safetySteps) {
+          y = checkPage(y, 8)
           const label = stepLabels[step.step] || step.step
           const status = step.tecnicoCompleted && step.auditorValidated ? '✓' : '✗'
           doc.text(`  ${status} ${label}${step.tecnicoNotes ? ` - ${step.tecnicoNotes}` : ''}`, 14, y)
           y += 5
-          if (y > 270) { doc.addPage(); y = 20 }
         }
 
-        // Panel
-        y += 5
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(30, 58, 46)
-        doc.text('2. Chequeo de Tablero', 14, y); y += 7
-        doc.setTextColor(0, 0, 0)
+        // 2. Panel
+        y += 5; y = checkPage(y)
+        y = addSectionHeader('2. Verificaciones de Tablero', y)
         doc.setFontSize(9)
         doc.setFont('helvetica', 'normal')
 
-        const panelLabels: Record<string, string> = {
-          voltage: 'Medir Tension',
-          current: 'Medir Corriente',
-          conductors: 'Identificar Conductores',
-          distribution: 'Verificar Distribucion',
-          grounding: 'Control Puesta a Tierra',
-          terminals: 'Verificar Terminales',
-          torque: 'Ajustar Torque',
-        }
-
         for (const step of panelSteps) {
+          y = checkPage(y, 8)
           const label = panelLabels[step.step] || step.step
           const value = step.tecnicoValue ? ` = ${step.tecnicoValue}` : ''
           const status = step.normativeStatus === 'passed' ? '✓' : step.normativeStatus === 'failed' ? '✗' : '○'
           doc.text(`  ${status} ${label}${value}`, 14, y)
           y += 5
-          if (y > 270) { doc.addPage(); y = 20 }
         }
 
-        // Motor
-        y += 5
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(30, 58, 46)
-        doc.text('3. Chequeo de Motor', 14, y); y += 7
-        doc.setTextColor(0, 0, 0)
+        // 3. Motor
+        y += 5; y = checkPage(y)
+        y = addSectionHeader('3. Verificaciones de Motor', y)
         doc.setFontSize(9)
         doc.setFont('helvetica', 'normal')
 
-        const motorLabels: Record<string, string> = {
-          voltage: 'Medir Tension',
-          current: 'Medir Corriente',
-          coil_resistance: 'Resistencia de Bobinas',
-          insulation: 'Aislamiento (Bobina-Carcasa)',
-          nameplate: 'Lectura de Placa',
-          power_cosfi: 'Potencia y Coseno fi',
-        }
-
         for (const step of motorSteps) {
+          y = checkPage(y, 8)
           const label = motorLabels[step.step] || step.step
           const value = step.tecnicoValue ? ` = ${step.tecnicoValue}` : ''
           const status = step.normativeStatus === 'passed' ? '✓' : step.normativeStatus === 'failed' ? '✗' : '○'
           doc.text(`  ${status} ${label}${value}`, 14, y)
           y += 5
-          if (y > 270) { doc.addPage(); y = 20 }
         }
 
-        // Analysis
+        // 4. Motor Nameplate Data
+        const nameplateStep = motorSteps.find(s => s.step === 'nameplate')
+        if (nameplateStep && nameplateStep.tecnicoValue) {
+          y += 5; y = checkPage(y)
+          y = addSectionHeader('4. Datos de Placa del Motor', y)
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'normal')
+          try {
+            const np = JSON.parse(nameplateStep.tecnicoValue)
+            const npFields = [
+              ['Marca', np.brand], ['Modelo', np.model], ['Potencia (HP)', np.powerHp],
+              ['Potencia (kW)', np.powerKw], ['Tensión (V)', np.voltage], ['Corriente (A)', np.current],
+              ['Frecuencia (Hz)', np.frequency], ['RPM', np.rpm], ['cos φ', np.cosFi],
+              ['Factor de Servicio', np.serviceFactor], ['Aislamiento', np.insulation], ['Conexión', np.connection],
+            ]
+            for (const [label, val] of npFields) {
+              y = checkPage(y, 8)
+              doc.text(`  ${label}: ${val || '-'}`, 14, y)
+              y += 5
+            }
+          } catch {
+            doc.text(`  Datos de placa: ${nameplateStep.tecnicoValue}`, 14, y)
+            y += 5
+          }
+        }
+
+        // 5. Analysis
+        const analysisNum = nameplateStep && nameplateStep.tecnicoValue ? '5' : '4'
         if (analysisData.length > 0) {
-          y += 5
-          doc.setFontSize(12)
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(30, 58, 46)
-          doc.text('4. Analisis de Potencia', 14, y); y += 7
-          doc.setTextColor(0, 0, 0)
+          y += 5; y = checkPage(y)
+          y = addSectionHeader(`${analysisNum}. Análisis de Potencia`, y)
           doc.setFontSize(9)
           doc.setFont('helvetica', 'normal')
 
           for (const item of analysisData) {
+            y = checkPage(y, 8)
             const status = item.status === 'passed' ? '✓' : '✗'
             doc.text(`  ${status} ${item.parameter}: Medido=${item.measuredValue}, Placa=${item.plateValue}, Desv=${item.deviation}%`, 14, y)
             y += 5
-            if (y > 270) { doc.addPage(); y = 20 }
           }
         }
+
+        // Normative References
+        y += 8; y = checkPage(y)
+        y = addSectionHeader('Referencias Normativas', y)
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        const normRefs = [
+          'AEA 90364 - Instalaciones eléctricas en inmuebles',
+          'IRAM 2071 - Tensiones nominales de distribución',
+          'IRAM 2281-3 - Puesta a tierra',
+          'IRAM 2413 - Aislamiento eléctrico',
+          'IRAM 62271 - Equipos de maniobra y protección',
+          'EDESA NT - Normas Técnicas distribuidora Salta',
+        ]
+        for (const ref of normRefs) {
+          y = checkPage(y, 8)
+          doc.text(`  • ${ref}`, 14, y)
+          y += 4
+        }
+
       } else if (docType === 'auditoria') {
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(30, 58, 46)
-        doc.text('Registro de Auditoria', 14, y); y += 7
-        doc.setTextColor(0, 0, 0)
+        // 1. Auto-generated findings
+        y = addSectionHeader('1. Hallazgos de Auditoría (Evaluación Normativa)', y)
         doc.setFontSize(9)
         doc.setFont('helvetica', 'normal')
 
-        // Check safety
         const safetyIssues = safetySteps.filter(s => !s.tecnicoCompleted || !s.auditorValidated)
+        const panelFailures = panelSteps.filter(s => s.normativeStatus === 'failed')
+        const motorFailures = motorSteps.filter(s => s.normativeStatus === 'failed')
+
         if (safetyIssues.length > 0) {
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(30, 58, 46)
           doc.text('Seguridad - Observaciones:', 14, y); y += 5
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(0, 0, 0)
           for (const step of safetyIssues) {
+            y = checkPage(y, 8)
+            const label = stepLabels[step.step] || step.step
             if (!step.tecnicoCompleted) {
-              doc.text(`  ✗ Paso "${step.step}" no completado por tecnico`, 14, y); y += 5
+              doc.text(`  ✗ "${label}" no completado por técnico`, 14, y); y += 5
             }
             if (!step.auditorValidated) {
-              doc.text(`  ✗ Paso "${step.step}" no validado por auditor`, 14, y); y += 5
+              doc.text(`  ✗ "${label}" no validado por auditor`, 14, y); y += 5
             }
           }
         }
 
-        // Check normative issues
-        const panelFailures = panelSteps.filter(s => s.normativeStatus === 'failed')
-        const motorFailures = motorSteps.filter(s => s.normativeStatus === 'failed')
-
         if (panelFailures.length > 0) {
-          y += 3
+          y += 3; y = checkPage(y)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(30, 58, 46)
           doc.text('Tablero - No conformidades:', 14, y); y += 5
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(0, 0, 0)
           for (const step of panelFailures) {
-            doc.text(`  ✗ ${step.step}: ${step.tecnicoValue || 'sin valor'} - Fuera de rango normativo`, 14, y); y += 5
+            y = checkPage(y, 8)
+            const label = panelLabels[step.step] || step.step
+            doc.text(`  ✗ ${label}: ${step.tecnicoValue || 'sin valor'} - Fuera de rango normativo`, 14, y); y += 5
           }
         }
 
         if (motorFailures.length > 0) {
-          y += 3
+          y += 3; y = checkPage(y)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(30, 58, 46)
           doc.text('Motor - No conformidades:', 14, y); y += 5
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(0, 0, 0)
           for (const step of motorFailures) {
-            doc.text(`  ✗ ${step.step}: ${step.tecnicoValue || 'sin valor'} - Fuera de rango normativo`, 14, y); y += 5
+            y = checkPage(y, 8)
+            const label = motorLabels[step.step] || step.step
+            doc.text(`  ✗ ${label}: ${step.tecnicoValue || 'sin valor'} - Fuera de rango normativo`, 14, y); y += 5
           }
         }
 
         if (safetyIssues.length === 0 && panelFailures.length === 0 && motorFailures.length === 0) {
+          doc.setTextColor(34, 139, 34)
           doc.text('✓ Todas las verificaciones conformes con la normativa vigente.', 14, y); y += 5
+          doc.setTextColor(0, 0, 0)
         }
 
-        y += 5
-        doc.text('Normativa aplicada: AEA 90364, IRAM 2071, IRAM 2281-3, IRAM 2413, IRAM 62271, EDESA NT', 14, y)
-      } else if (docType === 'presupuesto') {
-        doc.setFontSize(12)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(30, 58, 46)
-        doc.text('Presupuesto Estimado', 14, y); y += 7
-        doc.setTextColor(0, 0, 0)
+        // 2. Summary
+        y += 5; y = checkPage(y)
+        y = addSectionHeader('2. Resumen de Auditoría', y)
         doc.setFontSize(9)
         doc.setFont('helvetica', 'normal')
 
-        // Calculate basic budget
-        const laborBase = 95000
-        const materialsBase = 18000
-        const corrections = panelSteps.filter(s => s.normativeStatus === 'failed').length * 25000 +
-                           motorSteps.filter(s => s.normativeStatus === 'failed').length * 35000
+        const safetyCompleted = safetySteps.filter(s => s.tecnicoCompleted).length
+        const safetyTotal = safetySteps.length
+        const panelPassed = panelSteps.filter(s => s.normativeStatus === 'passed').length
+        const panelTotal = panelSteps.length
+        const motorPassed = motorSteps.filter(s => s.normativeStatus === 'passed').length
+        const motorTotal = motorSteps.length
 
-        doc.text('1. Mano de Obra', 14, y); y += 5
-        doc.text('  Relevamiento de tablero: $15,000 x 2hs', 14, y); y += 5
-        doc.text('  Relevamiento de motor: $15,000 x 1.5hs', 14, y); y += 5
-        doc.text('  Auditoria electrica: $18,000 x 2hs', 14, y); y += 5
-        doc.text(`  Subtotal: $${laborBase.toLocaleString('es-AR')}`, 14, y); y += 8
+        doc.text(`Seguridad: ${safetyCompleted}/${safetyTotal} completados`, 14, y); y += 5
+        doc.text(`Tablero: ${panelPassed}/${panelTotal} aprobados, ${panelFailures.length} rechazados`, 14, y); y += 5
+        doc.text(`Motor: ${motorPassed}/${motorTotal} aprobados, ${motorFailures.length} rechazados`, 14, y); y += 8
 
-        doc.text('2. Materiales', 14, y); y += 5
-        doc.text('  Cinta aisladora: $2,500 x 2', 14, y); y += 5
-        doc.text('  Funda termocontraible: $1,800 x 2m', 14, y); y += 5
-        doc.text('  Terminal de presion: $1,500 x 3', 14, y); y += 5
-        doc.text(`  Subtotal: $${materialsBase.toLocaleString('es-AR')}`, 14, y); y += 8
-
-        if (corrections > 0) {
-          doc.text('3. Correcciones Necesarias', 14, y); y += 5
-          const panelFails = panelSteps.filter(s => s.normativeStatus === 'failed')
-          const motorFails = motorSteps.filter(s => s.normativeStatus === 'failed')
-          for (const f of panelFails) {
-            doc.text(`  ✗ Correccion ${f.step}: $25,000`, 14, y); y += 5
-          }
-          for (const f of motorFails) {
-            doc.text(`  ✗ Correccion ${f.step}: $35,000`, 14, y); y += 5
-          }
-          doc.text(`  Subtotal correcciones: $${corrections.toLocaleString('es-AR')}`, 14, y); y += 8
-        }
-
-        const total = laborBase + materialsBase + corrections
-        doc.setFontSize(11)
-        doc.setFont('helvetica', 'bold')
-        doc.text(`TOTAL: $${total.toLocaleString('es-AR')}`, 14, y); y += 8
+        // 3. Normative references
+        y = checkPage(y)
+        y = addSectionHeader('3. Referencias Normativas', y)
         doc.setFontSize(8)
         doc.setFont('helvetica', 'normal')
-        doc.text('* Valores estimados basados en costos de la region (Salta). Precios en ARS.', 14, y)
+        const auditNormRefs = [
+          'AEA 90364 - Asociación Electrotécnica Argentina',
+          'IRAM 2071 - Tensiones nominales y tolerancias',
+          'IRAM 2281-3 - Protección contra descargas - Puesta a tierra',
+          'IRAM 2413 - Ensayos de aislamiento eléctrico',
+          'IRAM 62271 - Equipos de maniobra y protección',
+          'EDESA NT - Normas Técnicas distribuidora EDESA Salta',
+        ]
+        for (const ref of auditNormRefs) {
+          y = checkPage(y, 8)
+          doc.text(`  • ${ref}`, 14, y)
+          y += 4
+        }
+
+      } else if (docType === 'presupuesto') {
+        // Correcciones Detectadas
+        const failedPanel = panelSteps.filter(s => s.normativeStatus === 'failed')
+        const failedMotor = motorSteps.filter(s => s.normativeStatus === 'failed')
+
+        if (failedPanel.length > 0 || failedMotor.length > 0) {
+          y = addSectionHeader('Correcciones Detectadas', y)
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'normal')
+
+          for (const f of failedPanel) {
+            y = checkPage(y, 8)
+            const label = panelLabels[f.step] || f.step
+            doc.text(`  ✗ Tablero - ${label}: ${f.tecnicoValue || 'sin valor'} - Fuera de rango`, 14, y); y += 5
+          }
+          for (const f of failedMotor) {
+            y = checkPage(y, 8)
+            const label = motorLabels[f.step] || f.step
+            doc.text(`  ✗ Motor - ${label}: ${f.tecnicoValue || 'sin valor'} - Fuera de rango`, 14, y); y += 5
+          }
+          y += 5
+        }
+
+        // Budget calculation using calculateBudget function
+        y = checkPage(y)
+        const { calculateBudget: calcBudget, formatARS: fmtARS } = await import('@/lib/costs')
+        const budget = calcBudget(
+          panelSteps.map(c => ({ step: c.step, normativeStatus: c.normativeStatus, tecnicoValue: c.tecnicoValue })),
+          motorSteps.map(c => ({ step: c.step, normativeStatus: c.normativeStatus, tecnicoValue: c.tecnicoValue })),
+          safetySteps.map(c => ({ step: c.step, tecnicoCompleted: c.tecnicoCompleted, auditorValidated: c.auditorValidated }))
+        )
+
+        // 1. Labor
+        y = addSectionHeader('1. Mano de Obra', y)
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'normal')
+        for (const item of budget.labor) {
+          y = checkPage(y, 8)
+          doc.text(`  ${item.description}: ${fmtARS(item.unitPrice)} x ${item.quantity} ${item.unit} = ${fmtARS(item.subtotal)}`, 14, y)
+          y += 5
+        }
+        doc.setFont('helvetica', 'bold')
+        doc.text(`  Subtotal Mano de Obra: ${fmtARS(budget.laborTotal)}`, 14, y); y += 8
+
+        // 2. Materials
+        y = checkPage(y); y = addSectionHeader('2. Materiales', y)
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'normal')
+        for (const item of budget.materials) {
+          y = checkPage(y, 8)
+          doc.text(`  ${item.description}: ${fmtARS(item.unitPrice)} x ${item.quantity} ${item.unit} = ${fmtARS(item.subtotal)}`, 14, y)
+          y += 5
+        }
+        doc.setFont('helvetica', 'bold')
+        doc.text(`  Subtotal Materiales: ${fmtARS(budget.materialsTotal)}`, 14, y); y += 8
+
+        // 3. Corrections
+        if (budget.corrections.length > 0) {
+          y = checkPage(y); y = addSectionHeader('3. Correcciones', y)
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'normal')
+          for (const item of budget.corrections) {
+            y = checkPage(y, 8)
+            doc.text(`  ✗ ${item.description}: ${fmtARS(item.unitPrice)} x ${item.quantity} ${item.unit} = ${fmtARS(item.subtotal)}`, 14, y)
+            y += 5
+          }
+          doc.setFont('helvetica', 'bold')
+          doc.text(`  Subtotal Correcciones: ${fmtARS(budget.correctionsTotal)}`, 14, y); y += 10
+        }
+
+        // Totals with IVA
+        y = checkPage(y, 50)
+        const subtotalNeto = budget.grandTotal
+        const ivaAmount = subtotalNeto * 0.21
+        const totalConIva = subtotalNeto + ivaAmount
+
+        doc.setFillColor(245, 245, 245)
+        doc.rect(120, y - 3, 76, 8, 'F')
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.text('Subtotal Neto:', 125, y + 2)
+        doc.text(fmtARS(subtotalNeto), 192, y + 2, { align: 'right' })
+        y += 10
+
+        doc.setFillColor(245, 245, 245)
+        doc.rect(120, y - 3, 76, 8, 'F')
+        doc.text('IVA (21%):', 125, y + 2)
+        doc.text(fmtARS(ivaAmount), 192, y + 2, { align: 'right' })
+        y += 12
+
+        doc.setFillColor(30, 58, 46)
+        doc.rect(120, y - 4, 76, 12, 'F')
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(12)
+        doc.setFont('helvetica', 'bold')
+        doc.text('TOTAL c/IVA:', 125, y + 3)
+        doc.text(fmtARS(totalConIva), 192, y + 3, { align: 'right' })
+        y += 16
+
+        // Validity note
+        doc.setTextColor(0, 0, 0)
+        doc.setFillColor(255, 250, 230)
+        doc.rect(14, y - 2, 182, 18, 'F')
+        doc.setDrawColor(200, 180, 0)
+        doc.rect(14, y - 2, 182, 18, 'S')
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(150, 120, 0)
+        doc.text('Notas:', 16, y + 2)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(80, 80, 80)
+        doc.text('• Presupuesto válido por 15 días a partir de la fecha de emisión.', 16, y + 7)
+        doc.text('• Valores expresados en ARS. Precios referenciales región Salta. IVA incluido.', 16, y + 12)
       }
 
       // Footer on each page
@@ -368,8 +546,8 @@ export default function DocumentsStage() {
         doc.rect(0, pageHeight - 12, 210, 12, 'F')
         doc.setTextColor(255, 255, 255)
         doc.setFontSize(7)
-        doc.text('ADL Tecnico - Simulacion Educativa | Prof. Hector Cruz | AEA 90364 / IRAM / EDESA', 14, pageHeight - 4)
-        doc.text(`Pagina ${i} de ${totalPages}`, 196, pageHeight - 4, { align: 'right' })
+        doc.text('ADL Técnico - Simulación Educativa | Prof. Héctor Cruz | AEA 90364 / IRAM / EDESA', 14, pageHeight - 4)
+        doc.text(`Página ${i} de ${totalPages}`, 196, pageHeight - 4, { align: 'right' })
       }
 
       const pdfBase64 = doc.output('datauristring').split(',')[1]
@@ -462,22 +640,40 @@ export default function DocumentsStage() {
       {/* Session info */}
       <Card className="bg-slate-800/50 border-slate-700/50">
         <CardContent className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div>
-              <span className="text-xs text-slate-500">Código</span>
-              <p className="font-mono font-bold text-amber-400">{currentSession?.code}</p>
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-slate-800 border border-amber-500/30 flex items-center justify-center p-2 shrink-0">
+              <Image
+                src="/adl-logo.png"
+                alt="ADL Técnico"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
             </div>
-            <div>
-              <span className="text-xs text-slate-500">Técnico</span>
-              <p className="text-slate-200">{currentSession?.tecnicoName || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-xs text-slate-500">Auditor</span>
-              <p className="text-slate-200">{currentSession?.auditorName || 'N/A'}</p>
-            </div>
-            <div>
-              <span className="text-xs text-slate-500">Fecha</span>
-              <p className="text-slate-200">{new Date().toLocaleDateString('es-AR')}</p>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm flex-1">
+              <div>
+                <span className="text-xs text-slate-500">Código</span>
+                <p className="font-mono font-bold text-amber-400">{currentSession?.code}</p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Técnico</span>
+                <p className="text-slate-200">{currentSession?.tecnicoName || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Auditor</span>
+                <p className="text-slate-200">{currentSession?.auditorName || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Instructor</span>
+                <div className="flex items-center gap-1">
+                  <User className="w-3 h-3 text-amber-400" />
+                  <p className="text-slate-200">Prof. Héctor Cruz</p>
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Fecha</span>
+                <p className="text-slate-200">{new Date().toLocaleDateString('es-AR')}</p>
+              </div>
             </div>
           </div>
         </CardContent>

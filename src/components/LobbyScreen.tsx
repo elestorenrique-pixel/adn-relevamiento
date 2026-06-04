@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import {
-  Zap, Plus, LogIn, Clock, Copy, Check,
+  Plus, LogIn, Clock, Copy, Check,
   Users, ArrowRight, Shield, LogOut, RotateCcw
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
@@ -56,8 +57,14 @@ export default function LobbyScreen() {
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-amber-500" />
+            <div className="w-9 h-9 rounded-lg bg-slate-800 border border-amber-500/30 flex items-center justify-center p-1.5">
+              <Image
+                src="/adl-logo.png"
+                alt="ADL Técnico"
+                width={24}
+                height={24}
+                className="object-contain"
+              />
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-100">ADL <span className="text-amber-500">Técnico</span></h1>
@@ -193,9 +200,12 @@ export default function LobbyScreen() {
           >
             <Card className="bg-slate-900 border-slate-700/50">
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-slate-400" />
-                  <CardTitle className="text-slate-100 text-lg">Sesiones Recientes</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-slate-400" />
+                    <CardTitle className="text-slate-100 text-lg">Sesiones Recientes</CardTitle>
+                  </div>
+                  <span className="text-xs text-slate-500">{sessions.length} sesión{sessions.length !== 1 ? 'es' : ''}</span>
                 </div>
               </CardHeader>
               <CardContent>
@@ -221,9 +231,6 @@ export default function LobbyScreen() {
                                   <Copy className="w-3.5 h-3.5" />
                                 )}
                               </button>
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-xs text-slate-500">{formatDate(session.createdAt)}</span>
                               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
                                 session.status === 'completed'
                                   ? 'border-emerald-500/50 text-emerald-400'
@@ -236,6 +243,9 @@ export default function LobbyScreen() {
                                  session.status === 'panel' ? 'Tablero' :
                                  session.status === 'motor' ? 'Motor' : 'Análisis'}
                               </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-slate-500">{formatDate(session.createdAt)}</span>
                             </div>
                           </div>
                         </div>
@@ -279,10 +289,10 @@ export default function LobbyScreen() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-900/30 py-4">
+      <footer className="border-t border-slate-800 bg-slate-900/30 py-4 mt-auto">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <p className="text-xs text-slate-600">
-            ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Normativas AEA 90364 / IRAM / EDESA
+            ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz · Normativas AEA 90364 / IRAM / EDESA
           </p>
         </div>
       </footer>

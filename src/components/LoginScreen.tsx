@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Mail, Lock, User, Shield, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Mail, Lock, User, Shield, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import Image from 'next/image'
 import { useStore } from '@/lib/store'
 import type { UserRole } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -53,13 +54,30 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 relative overflow-hidden">
+      {/* Industrial circuit background pattern */}
+      <div className="absolute inset-0">
+        {/* Grid dots */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgb(245 158 11) 1px, transparent 0)`,
-          backgroundSize: '40px 40px',
+          backgroundSize: '32px 32px',
         }} />
+        {/* Circuit lines - horizontal */}
+        <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="circuit-h" x="0" y="0" width="200" height="80" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="40" x2="80" y2="40" stroke="#f59e0b" strokeWidth="1" />
+              <line x1="120" y1="40" x2="200" y2="40" stroke="#f59e0b" strokeWidth="1" />
+              <circle cx="80" cy="40" r="3" fill="none" stroke="#f59e0b" strokeWidth="1" />
+              <circle cx="120" cy="40" r="3" fill="none" stroke="#f59e0b" strokeWidth="1" />
+              <line x1="80" y1="40" x2="80" y2="20" stroke="#f59e0b" strokeWidth="0.5" />
+              <line x1="120" y1="40" x2="120" y2="60" stroke="#f59e0b" strokeWidth="0.5" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#circuit-h)" />
+        </svg>
+        {/* Subtle radial glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-amber-500/[0.02] blur-3xl" />
       </div>
 
       <motion.div
@@ -71,12 +89,19 @@ export default function LoginScreen() {
         {/* Branding */}
         <div className="text-center mb-8">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 mb-4"
+            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-900/80 border border-amber-500/30 mb-4 shadow-lg shadow-amber-500/5 p-2"
           >
-            <Zap className="w-8 h-8 text-amber-500" />
+            <Image
+              src="/adl-logo.png"
+              alt="ADL Técnico Logo"
+              width={56}
+              height={56}
+              className="object-contain"
+              priority
+            />
           </motion.div>
           <h1 className="text-3xl font-bold text-slate-100 tracking-tight">
             ADL <span className="text-amber-500">Técnico</span>
@@ -84,9 +109,15 @@ export default function LoginScreen() {
           <p className="text-slate-400 mt-2 text-sm">
             Simulación de Relevamiento y Auditoría Eléctrica
           </p>
+          <p className="text-amber-500/70 mt-1 text-xs font-medium">
+            Taller y Laboratorio de 3° año — Instalaciones Eléctricas
+          </p>
+          <p className="text-slate-500 mt-1 text-xs">
+            Prof. Héctor Cruz
+          </p>
         </div>
 
-        <Card className="bg-slate-900 border-slate-700/50 shadow-2xl">
+        <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-black/20 backdrop-blur-sm">
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-slate-800 rounded-t-lg">
               <TabsTrigger value="login" className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
@@ -278,7 +309,7 @@ export default function LoginScreen() {
         </Card>
 
         <p className="text-center text-xs text-slate-600 mt-6">
-          Normativas AEA 90364 · IRAM · EDESA
+          ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz · Normativas AEA 90364 / IRAM / EDESA
         </p>
       </motion.div>
     </div>

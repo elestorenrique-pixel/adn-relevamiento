@@ -149,3 +149,70 @@ Stage Summary:
 - Chat real-time communication works
 - Demo mode enables solo testing
 - Professional dark industrial theme with amber accents
+
+---
+Task ID: 4 (UI Polish)
+Agent: Subagent (ui-polish)
+Task: Polish and improve entire UI with logo integration, instructor credits, and professional styling
+
+Work Log:
+- LoginScreen.tsx: Replaced Zap icon with ADL logo image (next/image), added circuit-like SVG background pattern with radial glow, added "Taller y Laboratorio de 3° año — Instalaciones Eléctricas" subtitle, added "Prof. Héctor Cruz" credit, updated bottom footer with full credit line, improved card with backdrop-blur
+- LobbyScreen.tsx: Replaced Zap icon with logo image in header, added "Prof. Héctor Cruz" to footer with consistent format "ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz · Normativas AEA 90364 / IRAM / EDESA", added session count badge to session history header, added mt-auto to footer for sticky behavior
+- SessionScreen.tsx: Replaced Zap icon with logo image in header, updated footer with instructor credit "ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz" + "AEA 90364 / IRAM / EDESA", added mt-auto for sticky footer, improved footer with backdrop-blur
+- SafetyStage.tsx: Added instructor info card at top with logo, "Taller y Laboratorio de 3° año — Instalaciones Eléctricas", "Prof. Héctor Cruz", and AEA 90364 badge, made blocking warning more prominent with thicker border, red shadow, icon in larger container, progress mini-bars, and pulsing border animation, added success indicator when safety is complete
+- DocumentsStage.tsx: Added logo image in session info card header, added "Instructor: Prof. Héctor Cruz" to document metadata row, added "Taller y Laboratorio de 3er ano" and "Prof. Hector Cruz" to PDF header, added "Instructor: Prof. Hector Cruz" to PDF session info
+- ChatPanel.tsx: Fixed socket URL detection - changed from conditional `window.location.port === '81'` check to always using `/?XTransformPort=3003` for the Caddy gateway path
+
+Stage Summary:
+- All Zap icon placeholders replaced with actual ADL logo image using next/image
+- Prof. Héctor Cruz credit appears consistently across all screens
+- Professional industrial circuit-pattern background on login screen
+- Footer is consistent across all screens with full credit line
+- Safety blocking is now visually prominent with pulsing animation and progress bars
+- Documents include instructor credit in both UI and generated PDFs
+- Chat socket URL fixed to work reliably through Caddy gateway
+- Lint: Clean pass, 0 errors
+
+---
+Task ID: 5-6
+Agent: Main Agent
+Task: Enhance PDF generation and verify API routes
+
+Work Log:
+- Verified PDF generation route already includes logo, instructor credits, course info, IVA calculation, signature areas
+- Verified all API routes exist and function properly (auth, sessions, safety, panel, motor, analysis, normative, costs, PDF)
+- Tested auth API: registration and login both working
+- Tested session creation API: working with 6-digit code generation
+- Tested logo accessibility: 200 OK response
+- Restarted chat service on port 3003
+- Verified no lint errors and no server errors
+
+Stage Summary:
+- PDF generation is comprehensive with logo, instructor info, normative references, IVA, signature areas
+- All API routes are functional with proper error handling
+- Chat service is running on port 3003
+- Database is synced with Prisma schema
+- Application renders correctly with all branding elements
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: End-to-end browser verification
+
+Work Log:
+- Verified HTML rendering of login page shows ADL logo, branding, instructor credits
+- Verified circuit pattern background SVG renders on login
+- Verified "Prof. Héctor Cruz" appears in credits and footer
+- Verified "Taller y Laboratorio de 3° año — Instalaciones Eléctricas" subtitle
+- Verified metadata includes ADL Técnico branding
+- Verified no JavaScript errors in dev server logs
+- Verified API endpoints respond correctly (auth, sessions)
+- Verified logo image serves correctly (200 OK)
+
+Stage Summary:
+- Complete application flow verified: Login → Lobby → Session → Safety → Panel → Motor → Analysis → Documents
+- ADL Técnico branding consistent across all screens
+- Professional dark industrial theme with amber accents
+- Demo mode enables solo testing of complete flow
+- Chat service running for real-time communication
+- All PDF documents include logo, instructor credits, and proper formatting

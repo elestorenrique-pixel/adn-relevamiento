@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import {
   Shield, Check, Lock, AlertTriangle, ChevronRight,
-  HardHat, Eye, Hand, Zap, FastForward
+  HardHat, Eye, Hand, Zap, FastForward, GraduationCap, User
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { SAFETY_STEPS, EPP_ITEMS } from '@/lib/types'
@@ -72,6 +73,40 @@ export default function SafetyStage() {
 
   return (
     <div className="space-y-6">
+      {/* Instructor Info Card */}
+      <Card className="bg-slate-900/80 border-amber-500/20">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center p-1.5">
+                <Image
+                  src="/adl-logo.png"
+                  alt="ADL Técnico"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-semibold text-slate-200">Taller y Laboratorio de 3° año — Instalaciones Eléctricas</span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <User className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-xs text-slate-400">Prof. Héctor Cruz</span>
+                  <span className="text-xs text-slate-600">·</span>
+                  <span className="text-xs text-slate-500">Normativas AEA 90364 / IRAM / EDESA</span>
+                </div>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px] hidden sm:inline-flex">
+              AEA 90364
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -132,20 +167,54 @@ export default function SafetyStage() {
         </div>
       </div>
 
-      {/* Blocking warning */}
+      {/* Blocking warning - more visually prominent */}
       {!isSafetyComplete && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30"
+          className="relative overflow-hidden"
         >
-          <Lock className="w-5 h-5 text-red-400 shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-red-400">Acceso Bloqueado</p>
-            <p className="text-xs text-red-400/70">
-              {demoMode
-                ? 'Complete TODAS las reglas de oro y el EPP para avanzar.'
-                : 'Debe completar y validar TODAS las reglas de oro y el EPP antes de avanzar a mediciones.'}
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border-2 border-red-500/40 shadow-lg shadow-red-500/5">
+            <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-red-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-400">Acceso Bloqueado — Seguridad Incompleta</p>
+              <p className="text-xs text-red-400/70 mt-0.5">
+                {demoMode
+                  ? 'Complete TODAS las reglas de oro y el EPP para avanzar.'
+                  : 'Debe completar y validar TODAS las reglas de oro y el EPP antes de avanzar a mediciones.'}
+              </p>
+            </div>
+            <div className="shrink-0 hidden sm:block">
+              <div className="flex gap-1">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className={`w-2 h-6 rounded-sm ${
+                    i <= completedCount ? 'bg-red-500/40' : 'bg-slate-700'
+                  }`} />
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Pulsing border effect */}
+          <div className="absolute inset-0 rounded-lg border-2 border-red-500/20 animate-pulse pointer-events-none" />
+        </motion.div>
+      )}
+
+      {/* Safety Complete Success Indicator */}
+      {isSafetyComplete && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-4 rounded-lg bg-emerald-500/10 border-2 border-emerald-500/30"
+        >
+          <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <Check className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-emerald-400">Seguridad Completa — Puede Avanzar</p>
+            <p className="text-xs text-emerald-400/70 mt-0.5">
+              Todas las reglas de oro han sido completadas y validadas. Puede proceder al chequeo de tablero.
             </p>
           </div>
         </motion.div>

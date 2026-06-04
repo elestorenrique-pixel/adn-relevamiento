@@ -30,12 +30,8 @@ export default function ChatPanel({ isCollapsed, onToggle }: ChatPanelProps) {
   useEffect(() => {
     if (!currentSession || !user) return
 
-    // Use Caddy proxy path when available, otherwise direct connection to chat service
-    const socketUrl = typeof window !== 'undefined' && window.location.port === '81'
-      ? '/?XTransformPort=3003'
-      : 'http://localhost:3003'
-
-    const newSocket = io(socketUrl, {
+    // Always use Caddy gateway path for Socket.io connection
+    const newSocket = io('/?XTransformPort=3003', {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,

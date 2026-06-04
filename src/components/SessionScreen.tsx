@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import {
-  Zap, LogOut, Users, Shield, ChevronRight,
-  MessageSquare
+  LogOut, Users, Shield, ChevronRight,
+  MessageSquare, Zap
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import type { SessionStage } from '@/lib/types'
@@ -88,8 +89,14 @@ export default function SessionScreen() {
           {/* Left: Branding + Session Info */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-amber-500" />
+              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-amber-500/30 flex items-center justify-center p-1">
+                <Image
+                  src="/adl-logo.png"
+                  alt="ADL Técnico"
+                  width={20}
+                  height={20}
+                  className="object-contain"
+                />
               </div>
               <span className="text-sm font-bold text-slate-100 hidden sm:inline">
                 ADL <span className="text-amber-500">Técnico</span>
@@ -203,11 +210,11 @@ export default function SessionScreen() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-900/50 py-2 px-4 shrink-0">
+      {/* Sticky Footer */}
+      <footer className="border-t border-slate-800 bg-slate-900/80 backdrop-blur-sm py-2 px-4 shrink-0 mt-auto">
         <div className="flex items-center justify-between text-xs text-slate-600">
-          <span>AEA 90364 · IRAM · EDESA</span>
-          <span>ADL Técnico v1.0</span>
+          <span>ADL Técnico · Simulación de Relevamiento y Auditoría Eléctrica · Prof. Héctor Cruz</span>
+          <span>AEA 90364 / IRAM / EDESA</span>
         </div>
       </footer>
     </div>
