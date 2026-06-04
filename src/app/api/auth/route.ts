@@ -27,7 +27,7 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     const validation = authSchemas.register.safeParse({ email, name, password, role })
     if (!validation.success) {
       const errors: Record<string, string> = {}
-      validation.error.errors.forEach((err) => {
+      validation.error.issues.forEach((err) => {
         errors[err.path.join('.')] = err.message
       })
       throw validationError(errors)
@@ -90,9 +90,10 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     const validation = authSchemas.login.safeParse({ email, password })
     if (!validation.success) {
       const errors: Record<string, string> = {}
-      validation.error.errors.forEach((err) => {
+      validation.error.issues.forEach((err) => {
         errors[err.path.join('.')] = err.message
       })
+      
       throw validationError(errors)
     }
 
