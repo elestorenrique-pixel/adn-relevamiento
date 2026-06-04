@@ -49,8 +49,7 @@ const nextConfig: NextConfig = {
   // ═══════════════════════════════════════════════════════════
   // OPTIMIZACIONES
   // ═══════════════════════════════════════════════════════════
-  
-  compress: true,
+  // (Leave compression to hosting platform; avoid deprecated/invalid keys)
 
   // ═══════════════════════════════════════════════════════════
   // MIDDLEWARE
@@ -58,15 +57,7 @@ const nextConfig: NextConfig = {
   // Registrar middleware si existen
   // middleware: ['./middleware.ts'],
 
-  // ═══════════════════════════════════════════════════════════
-  // LOGGING
-  // ═══════════════════════════════════════════════════════════
-  logging: {
-    fetches: {
-      fullUrl: process.env.NODE_ENV === 'development',
-    
-    },
-  },
+  // Logging is handled by the platform (Vercel) or external logger
 };
 
 export default nextConfig;

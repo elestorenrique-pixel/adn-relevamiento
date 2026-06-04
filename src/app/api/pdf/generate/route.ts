@@ -565,7 +565,7 @@ function generateAuditoria(
   y = checkPage(doc, y)
   y = addSectionHeader(doc, '3. Resumen de Auditoría', y)
 
-  const summaryData = []
+  const summaryData: string[][] = []
 
   // Safety summary
   const safetyCompleted = safetyChecks.filter((c: any) => c.tecnicoCompleted).length

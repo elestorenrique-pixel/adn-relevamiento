@@ -193,9 +193,9 @@ export default function AnalysisStage() {
 
                       if (!s || !p || !q) return null
 
-                      const sVal = parseFloat(s.measuredValue) || 1
-                      const pVal = parseFloat(p.measuredValue) || 0
-                      const qVal = parseFloat(q.measuredValue) || 0
+                      const sVal = parseFloat(s.measuredValue ?? '1') || 1
+                      const pVal = parseFloat(p.measuredValue ?? '0') || 0
+                      const qVal = parseFloat(q.measuredValue ?? '0') || 0
                       const maxVal = Math.max(sVal, 1)
 
                       const scale = 160 / maxVal

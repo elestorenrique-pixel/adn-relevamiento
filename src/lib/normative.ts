@@ -26,12 +26,12 @@ const EDESA_RULES = {
   },
   // Current (IRAM 2069)
   current: {
-    overloadFactor: 1.25, rule: 'IRAM 2069', desc: 'Factor de sobrecarga 1.25x para protección',
+    overloadFactor: { value: 1.25, rule: 'IRAM 2069', desc: 'Factor de sobrecarga 1.25x para protección' },
   },
   // Insulation (IRAM 2413)
   insulation: {
-    motorMin: 1, rule: 'IRAM 2413', desc: 'Aislamiento mínimo motor 1MΩ por kV de operación',
-    panelMin: 0.5, rule: 'IRAM 2413', desc: 'Aislamiento mínimo tablero 0.5MΩ',
+    motorMin: { value: 1, rule: 'IRAM 2413', desc: 'Aislamiento mínimo motor 1MΩ por kV de operación' },
+    panelMin: { value: 0.5, rule: 'IRAM 2413', desc: 'Aislamiento mínimo tablero 0.5MΩ' },
   },
   // Torque
   torque: {
@@ -39,15 +39,15 @@ const EDESA_RULES = {
   },
   // Conductors
   conductors: {
-    phaseColors: ['rojo', 'marrón', 'negro'], rule: 'AEA 90364', desc: 'Colores de fases: rojo/marrón/negro',
-    neutralColor: 'celeste', rule: 'AEA 90364', desc: 'Color del neutro: celeste',
-    groundColor: 'verde-amarillo', rule: 'AEA 90364', desc: 'Color de tierra: verde-amarillo',
+    phaseColors: { value: ['rojo', 'marrón', 'negro'], rule: 'AEA 90364', desc: 'Colores de fases: rojo/marrón/negro' },
+    neutralColor: { value: 'celeste', rule: 'AEA 90364', desc: 'Color del neutro: celeste' },
+    groundColor: { value: 'verde-amarillo', rule: 'AEA 90364', desc: 'Color de tierra: verde-amarillo' },
   },
   // Motor
   motor: {
-    coilImbalance: 5, rule: 'IRAM 62271', desc: 'Desbalance entre bobinas ≤5%',
-    cosFiMin: 0.85, rule: 'EDESA NT', desc: 'Factor de potencia mínimo 0.85',
-    serviceFactorMax: 1.15, rule: 'IRAM 62271', desc: 'Factor de servicio máximo 1.15',
+    coilImbalance: { value: 5, rule: 'IRAM 62271', desc: 'Desbalance entre bobinas ≤5%' },
+    cosFiMin: { value: 0.85, rule: 'EDESA NT', desc: 'Factor de potencia mínimo 0.85' },
+    serviceFactorMax: { value: 1.15, rule: 'IRAM 62271', desc: 'Factor de servicio máximo 1.15' },
   }
 }
 
@@ -55,24 +55,24 @@ const EDESA_RULES = {
 const AEA_RULES = {
   // Safety
   safety: {
-    fiveGoldenRules: true, rule: 'AEA 90364 Secc. 41', desc: 'Las 5 reglas de oro son obligatorias antes de trabajar',
-    epp: true, rule: 'AEA 90364 Secc. 42', desc: 'EPP obligatorio según tipo de trabajo',
-    delimitation: true, rule: 'AEA 90364 Secc. 43', desc: 'Delimitación de zona de trabajo obligatoria',
+    fiveGoldenRules: { value: true, rule: 'AEA 90364 Secc. 41', desc: 'Las 5 reglas de oro son obligatorias antes de trabajar' },
+    epp: { value: true, rule: 'AEA 90364 Secc. 42', desc: 'EPP obligatorio según tipo de trabajo' },
+    delimitation: { value: true, rule: 'AEA 90364 Secc. 43', desc: 'Delimitación de zona de trabajo obligatoria' },
   },
   // Panel requirements
   panel: {
-    identification: true, rule: 'AEA 90364 Secc. 51', desc: 'Identificación de circuitos obligatoria',
-    thermalMagnetic: true, rule: 'AEA 90364 Secc. 52', desc: 'Protección termomagnética por circuito',
-    differential: true, rule: 'AEA 90364 Secc. 53', desc: 'Protección diferencial ≤30mA en circuitos generales',
-    groundingBar: true, rule: 'AEA 90364 Secc. 54', desc: 'Barra de puesta a tierra independiente',
-    neutralBar: true, rule: 'AEA 90364 Secc. 55', desc: 'Barra de neutro separada',
+    identification: { value: true, rule: 'AEA 90364 Secc. 51', desc: 'Identificación de circuitos obligatoria' },
+    thermalMagnetic: { value: true, rule: 'AEA 90364 Secc. 52', desc: 'Protección termomagnética por circuito' },
+    differential: { value: true, rule: 'AEA 90364 Secc. 53', desc: 'Protección diferencial ≤30mA en circuitos generales' },
+    groundingBar: { value: true, rule: 'AEA 90364 Secc. 54', desc: 'Barra de puesta a tierra independiente' },
+    neutralBar: { value: true, rule: 'AEA 90364 Secc. 55', desc: 'Barra de neutro separada' },
   },
   // Motor requirements
   motor: {
-    protection: true, rule: 'AEA 90364 Secc. 61', desc: 'Protección termomagnética y diferencial',
-    thermalRelay: true, rule: 'AEA 90364 Secc. 62', desc: 'Relé térmico de protección',
-    command: true, rule: 'AEA 90364 Secc. 63', desc: 'Circuito de comando con seccionador',
-    signaling: true, rule: 'AEA 90364 Secc. 64', desc: 'Señalización de estado (marcha/parada/alarma)',
+    protection: { value: true, rule: 'AEA 90364 Secc. 61', desc: 'Protección termomagnética y diferencial' },
+    thermalRelay: { value: true, rule: 'AEA 90364 Secc. 62', desc: 'Relé térmico de protección' },
+    command: { value: true, rule: 'AEA 90364 Secc. 63', desc: 'Circuito de comando con seccionador' },
+    signaling: { value: true, rule: 'AEA 90364 Secc. 64', desc: 'Señalización de estado (marcha/parada/alarma)' },
   }
 }
 
@@ -146,19 +146,20 @@ export function validateGrounding(resistance: number): NormativeValidation {
 
 // Validate insulation resistance
 export function validateInsulation(resistance: number, isMotor: boolean = false): NormativeValidation {
-  const rule = isMotor ? EDESA_RULES.insulation.motorMin : EDESA_RULES.insulation.panelMin
-  const passed = resistance >= rule
+  const ruleObj = isMotor ? EDESA_RULES.insulation.motorMin : EDESA_RULES.insulation.panelMin
+  const ruleValue = ruleObj.value
+  const passed = resistance >= ruleValue
 
   return {
     passed,
-    rule: rule.rule,
+    rule: ruleObj.rule,
     source: 'IRAM 2413',
     severity: passed ? 'info' : 'error',
     message: passed
-      ? `Aislamiento OK (≥${rule}MΩ)`
-      : `Aislamiento INSUFICIENTE (mín ${rule}MΩ). ${isMotor ? EDESA_RULES.insulation.motorMin.desc : EDESA_RULES.insulation.panelMin.desc}`,
+      ? `Aislamiento OK (≥${ruleValue}MΩ)`
+      : `Aislamiento INSUFICIENTE (mín ${ruleValue}MΩ). ${ruleObj.desc}`,
     value: `${resistance}MΩ`,
-    expected: `≥${rule}MΩ`
+    expected: `≥${ruleValue}MΩ`
   }
 }
 
@@ -170,37 +171,39 @@ export function validateCoilBalance(r1: number, r2: number, r3: number): Normati
     Math.abs(r2 - avg) / avg * 100,
     Math.abs(r3 - avg) / avg * 100
   )
-  const rule = EDESA_RULES.motor.coilImbalance
-  const passed = maxDeviation <= rule
+  const ruleObj = EDESA_RULES.motor.coilImbalance
+  const ruleValue = ruleObj.value
+  const passed = maxDeviation <= ruleValue
 
   return {
     passed,
-    rule: rule.rule,
+    rule: ruleObj.rule,
     source: 'IRAM 62271',
     severity: passed ? 'info' : 'warning',
     message: passed
-      ? `Balance de bobinas OK (desviación ${maxDeviation.toFixed(1)}% ≤ ${rule}%)`
-      : `Desbalance de bobinas EXCEDIDO (${maxDeviation.toFixed(1)}% > ${rule}%). ${rule.desc}`,
+      ? `Balance de bobinas OK (desviación ${maxDeviation.toFixed(1)}% ≤ ${ruleValue}%)`
+      : `Desbalance de bobinas EXCEDIDO (${maxDeviation.toFixed(1)}% > ${ruleValue}%). ${ruleObj.desc}`,
     value: `${maxDeviation.toFixed(1)}%`,
-    expected: `≤${rule}%`
+    expected: `≤${ruleValue}%`
   }
 }
 
 // Validate power factor
 export function validatePowerFactor(cosFi: number): NormativeValidation {
-  const rule = EDESA_RULES.motor.cosFiMin
-  const passed = cosFi >= rule
+  const ruleObj = EDESA_RULES.motor.cosFiMin
+  const ruleValue = ruleObj.value
+  const passed = cosFi >= ruleValue
 
   return {
     passed,
-    rule: rule.rule,
+    rule: ruleObj.rule,
     source: 'EDESA',
     severity: passed ? 'info' : 'warning',
     message: passed
-      ? `Factor de potencia OK (cos φ = ${cosFi.toFixed(2)} ≥ ${rule})`
-      : `Factor de potencia BAJO (cos φ = ${cosFi.toFixed(2)} < ${rule}). ${rule.desc}`,
+      ? `Factor de potencia OK (cos φ = ${cosFi.toFixed(2)} ≥ ${ruleValue})`
+      : `Factor de potencia BAJO (cos φ = ${cosFi.toFixed(2)} < ${ruleValue}). ${ruleObj.desc}`,
     value: cosFi.toFixed(2),
-    expected: `≥${rule}`
+    expected: `≥${ruleValue}`
   }
 }
 

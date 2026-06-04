@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import type { AuditRecord } from '@prisma/client'
 import { autoCompleteAudit } from '@/lib/normative'
 
 // POST /api/sessions/[id]/audit/auto-complete - Auto-complete audit for omissions
@@ -72,7 +73,7 @@ export async function POST(
     const autoResults = autoCompleteAudit(category, steps)
 
     // Create audit records for detected issues
-    const createdRecords = []
+    const createdRecords: AuditRecord[] = []
     for (const result of autoResults) {
       const record = await db.auditRecord.create({
         data: {

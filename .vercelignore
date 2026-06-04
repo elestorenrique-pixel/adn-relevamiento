@@ -1,0 +1,16 @@
+# Ignore local-only tooling and mini-services during Vercel builds
+mini-services
+mini-services-dist
+.zscripts
+/.next
+dev.log
+*.log
+node_modules
+.bun
+dist
+examples
+
+# Keep env files local only
+.env
+.env.local
+.env.*.local

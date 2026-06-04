@@ -13,7 +13,7 @@ export const authSchemas = {
     name: z.string().min(3, 'Mínimo 3 caracteres').max(100),
     email: z.string().email('Email inválido'),
     password: z.string().min(8, 'Mínimo 8 caracteres'),
-    role: z.enum(['tecnico', 'auditor'], { errorMap: () => ({ message: 'Rol inválido' }) }),
+    role: z.enum(['tecnico', 'auditor'], { message: 'Rol inválido' }),
   }),
 }
 
